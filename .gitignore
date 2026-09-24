@@ -1,0 +1,16 @@
+# Backend (Laravel)
+backend/vendor/
+backend/.env
+backend/storage/*.key
+backend/node_modules/
+
+# Frontend (Nuxt)
+frontend/node_modules/
+frontend/.output/
+frontend/.nuxt/
+frontend/.env
+
+# General
+.DS_Store
+Thumbs.db
+*.log
