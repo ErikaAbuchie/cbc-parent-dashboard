@@ -24,7 +24,10 @@ async function logout() {
       <h1>Welcome, {{ teacher.name }}</h1>
       <p>You are signed in as a teacher.</p>
       <p v-if="!teacher.school_id">Your account is awaiting a school assignment. Contact your school administrator before recording assessments.</p>
-      <p v-else>Your school account is connected. Assessment entry will be available here.</p>
+      <template v-else>
+        <p>Your school account is connected. Record and review your learners' competency ratings.</p>
+        <NuxtLink class="assessment-link" to="/teacher/assessments">Enter assessments</NuxtLink>
+      </template>
       <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
       <button :disabled="pending" @click="logout">{{ pending ? 'Signing out…' : 'Sign out' }}</button>
     </template>
@@ -35,3 +38,7 @@ async function logout() {
     </template>
   </main>
 </template>
+
+<style scoped>
+.assessment-link { display: block; color: #176349; font-weight: bold; margin: 24px 0 0; }
+</style>
