@@ -71,6 +71,30 @@ class TeacherAssessmentTest extends TestCase
         $this->assertSame($this->subStrand->id, $record->subStrand->id);
     }
 
+    public function test_full_class_workflow_persists_updates_and_separates_terms(): void
+    {
+        $students = Student::orderBy('id')->get();
+        $payload = ['sub_strand_id' => $this->subStrand->id, 'term' => 'Term 1 2026', 'assessments' => []];
+        foreach ($students as $index => $student) {
+            $payload['assessments'][] = ['student_id' => $student->id,
+                'competency_level' => ['ME', 'AE', 'EE'][$index], 'remarks' => 'Simulated workflow test.'];
+        }
+        $this->postJson($this->endpoint(), $payload, $this->headers)->assertOk()->assertJsonPath('saved_count', 3);
+        $query = ['sub_strand_id' => $this->subStrand->id, 'term' => 'Term 1 2026'];
+        $this->getJson($this->endpoint().'?'.http_build_query($query), $this->headers)
+            ->assertOk()->assertJsonCount(3, 'assessments')->assertJsonPath('assessments.0.competency_level', 'ME');
+        $payload['assessments'][0]['competency_level'] = 'EE';
+        $this->postJson($this->endpoint(), $payload, $this->headers)->assertOk();
+        $this->assertDatabaseCount('assessments', 3);
+        $this->getJson($this->endpoint().'?'.http_build_query($query), $this->headers)
+            ->assertOk()->assertJsonPath('assessments.0.competency_level', 'EE');
+        $query['term'] = 'Term 2 2026';
+        $this->getJson($this->endpoint().'?'.http_build_query($query), $this->headers)
+            ->assertOk()->assertJsonCount(0, 'assessments');
+        $this->assertDatabaseHas('assessments', ['student_id' => $students[1]->id,
+            'competency_level' => 'AE', 'remarks' => 'Simulated workflow test.', 'term' => 'Term 1 2026']);
+    }
+
     public function test_other_schools_are_hidden_for_reads_and_writes(): void
     {
         $school = School::create(['name' => 'Other School']);
