@@ -127,6 +127,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 <template>
   <main class="assessment-page">
     <NuxtLink to="/teacher/dashboard">← Teacher dashboard</NuxtLink>
+    <NuxtLink class="manage-link" to="/teacher/students">Manage students</NuxtLink>
     <h1>Assessment entry</h1>
     <p>Choose a class, curriculum topic, and term. Record one competency rating per learner.</p>
     <template v-if="teacher?.school_id && !classError">
@@ -144,7 +145,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
           <button type="submit" :disabled="!subStrandId">Load learners and saved ratings</button>
         </fieldset>
       </form>
-      <p v-if="!classData?.classes.length">No classes are available for your school.</p>
+      <p v-if="!classData?.classes.length">No classes have been assigned to you. Contact your school administrator.</p>
       <p v-if="classId && !working && !areas.length">No curriculum is available for this class grade.</p>
       <p v-if="working" role="status">Working…</p>
       <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }} <span v-for="(item, index) in fieldErrors" :key="index" class="field-error">{{ item }}</span></p>
@@ -184,6 +185,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 
 <style scoped>
 .assessment-page { max-width: 1100px; }
+.manage-link { float: right; }
 fieldset { border: 1px solid #dce6e2; border-radius: 8px; padding: 16px; min-width: 0; }
 legend { font-weight: bold; padding: 0 8px; }
 .selectors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 20px; }
