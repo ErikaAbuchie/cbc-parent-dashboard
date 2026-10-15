@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
+    use \Illuminate\Database\Eloquent\SoftDeletes;
+
     protected $fillable = ['school_class_id', 'full_name', 'admission_number', 'parent_phone_number'];
 
     public function schoolClass(): \Illuminate\Database\Eloquent\Relations\BelongsTo

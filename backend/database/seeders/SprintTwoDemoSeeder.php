@@ -35,7 +35,7 @@ class SprintTwoDemoSeeder extends Seeder
             ], ['grade_level' => 5]);
 
             foreach (['DEMO-001', 'DEMO-002', 'DEMO-003'] as $index => $admission) {
-                $student = Student::firstOrCreate(['admission_number' => $admission], [
+                $student = Student::withTrashed()->firstOrCreate(['admission_number' => $admission], [
                     'school_class_id' => $class->id,
                     'full_name' => 'Demo Learner '.($index + 1),
                     // Deliberately not a telephone number: demo data must not send real SMS.
@@ -48,6 +48,7 @@ class SprintTwoDemoSeeder extends Seeder
 
             $teacher->school_id = $school->id;
             $teacher->save();
+            $teacher->assignedClasses()->syncWithoutDetaching([$class->id]);
         });
 
         $this->command?->info('Demo Teacher linked to CBC Demo Primary School. Grade 5 Demo and three simulated learners are ready.');

@@ -6,6 +6,7 @@ use App\Models\Assessment;
 use App\Models\LearningArea;
 use App\Models\SchoolClass;
 use App\Models\SubStrand;
+use App\Services\TeacherClassAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,14 +24,14 @@ class TeacherAssessmentController extends Controller
     {
         $this->requireTeacher($request);
 
-        return SchoolClass::where('school_id', $request->user()->school_id)->findOrFail($classId);
+        return TeacherClassAccess::query($request->user())->findOrFail($classId);
     }
 
     public function classes(Request $request): JsonResponse
     {
         $this->requireTeacher($request);
 
-        return response()->json(['classes' => SchoolClass::where('school_id', $request->user()->school_id)
+        return response()->json(['classes' => TeacherClassAccess::query($request->user())
             ->orderBy('name')->get(['id', 'name', 'grade_level'])]);
     }
 
@@ -82,7 +83,7 @@ class TeacherAssessmentController extends Controller
         $data = $request->validate([
             'assessments' => ['required', 'array', 'min:1', 'max:200'],
             'assessments.*' => ['required', 'array:student_id,competency_level,remarks'],
-            'assessments.*.student_id' => ['required', 'integer', 'distinct', Rule::exists('students', 'id')->where('school_class_id', $class->id)],
+            'assessments.*.student_id' => ['required', 'integer', 'distinct', Rule::exists('students', 'id')->where('school_class_id', $class->id)->whereNull('deleted_at')],
             'assessments.*.competency_level' => ['required', Rule::in(['EE', 'ME', 'AE', 'BE'])],
             'assessments.*.remarks' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -90,6 +91,9 @@ class TeacherAssessmentController extends Controller
         DB::transaction(function () use ($data, $selection, $class, $request) {
             // Serialize saves for this class so concurrent retries cannot create duplicates.
             SchoolClass::whereKey($class->id)->lockForUpdate()->firstOrFail();
+            if ($class->students()->whereIn('id', array_column($data['assessments'], 'student_id'))->count() !== count($data['assessments'])) {
+                throw ValidationException::withMessages(['assessments' => 'The class roster changed. Reload learners before saving.']);
+            }
             foreach ($data['assessments'] as $row) {
                 Assessment::updateOrCreate([
                     'student_id' => $row['student_id'],

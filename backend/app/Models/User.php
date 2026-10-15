@@ -40,6 +40,11 @@ class User extends Authenticatable
         return $this->belongsTo(School::class);
     }
 
+    public function assignedClasses(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(SchoolClass::class, 'class_teacher')->withTimestamps();
+    }
+
     /**
      * Get the attributes that should be cast.
      *
