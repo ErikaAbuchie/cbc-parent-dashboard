@@ -1,7 +1,7 @@
 export default defineEventHandler(async (event) => {
   const path = getRouterParam(event, 'path') || ''
   const method = getMethod(event)
-  const allowedGet = path === 'classes' || /^classes\/\d+\/(assessment-options|assessments|students)$/.test(path)
+  const allowedGet = path === 'classes' || /^classes\/\d+\/(assessment-options|assessments|students)$/.test(path) || /^classes\/\d+\/assessments\/\d+\/history$/.test(path)
   const allowedPost = /^classes\/\d+\/(assessments|students)$/.test(path) || /^classes\/\d+\/students\/\d+\/restore$/.test(path)
   const allowedEdit = /^classes\/\d+\/students\/\d+$/.test(path)
   if (!((method === 'GET' && allowedGet) || (method === 'POST' && allowedPost) || (['PATCH', 'DELETE'].includes(method) && allowedEdit))) {

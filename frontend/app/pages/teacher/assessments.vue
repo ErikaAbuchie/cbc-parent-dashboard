@@ -3,7 +3,8 @@ type SubStrand = { id: number; name: string }
 type Strand = { id: number; name: string; sub_strands: SubStrand[] }
 type Area = { id: number; name: string; strands: Strand[] }
 type Learner = { id: number; full_name: string; admission_number: string }
-type Rating = { student_id: number; competency_level: string; remarks: string | null }
+type Rating = { id: number; student_id: number; competency_level: string; remarks: string | null }
+type Revision = { id: number; version: number; event: string; competency_level: string; remarks: string | null; recorded_at: string; user_id: number }
 type Row = Learner & { competency_level: string; remarks: string }
 useHead({ title: 'Assessment entry | CBC Parent Insight' })
 const { data: teacher, error: sessionError } = await useFetch('/api/auth/session')
@@ -20,6 +21,8 @@ const areas = ref<Area[]>([])
 const learners = ref<Learner[]>([])
 const rows = ref<Row[]>([])
 const saved = ref<Rating[]>([])
+const history = ref<Revision[]>([])
+const historyLearner = ref('')
 const baseline = ref('[]')
 const dirty = computed(() => JSON.stringify(rows.value) !== baseline.value)
 const working = ref(false)
@@ -35,6 +38,8 @@ const levels = [{ code: 'EE', label: 'Exceeding Expectations' }, { code: 'ME', l
 function resetRows() {
   rows.value = []
   saved.value = []
+  history.value = []
+  historyLearner.value = ''
   baseline.value = '[]'
   loaded.value = false
   message.value = ''
@@ -95,6 +100,8 @@ async function loadAssessments() {
 }
 
 async function saveAssessments() {
+  history.value = []
+  historyLearner.value = ''
   working.value = true
   errorMessage.value = ''
   fieldErrors.value = []
@@ -109,6 +116,20 @@ async function saveAssessments() {
     saved.value = persisted.assessments
     populateRows()
     message.value = `${result.saved_count} assessments saved and reloaded.`
+  } catch (error) { await showError(error) }
+  finally { working.value = false }
+}
+
+async function viewHistory(rating: Rating) {
+  working.value = true
+  errorMessage.value = ''
+  fieldErrors.value = []
+  history.value = []
+  historyLearner.value = ''
+  try {
+    const result = await $fetch<{ revisions: Revision[] }>(`/api/teacher/classes/${classId.value}/assessments/${rating.id}/history`)
+    history.value = result.revisions
+    historyLearner.value = learners.value.find(learner => learner.id === rating.student_id)?.full_name || 'Learner'
   } catch (error) { await showError(error) }
   finally { working.value = false }
 }
@@ -173,7 +194,13 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
         </form>
         <h2>Saved assessments</h2>
         <p v-if="!saved.length">No assessments have been saved for this selection yet.</p>
-        <ul v-else><li v-for="rating in saved" :key="rating.student_id">{{ learners.find(learner => learner.id === rating.student_id)?.full_name }} — <strong>{{ rating.competency_level }}</strong><span v-if="rating.remarks"> · {{ rating.remarks }}</span></li></ul>
+        <ul v-else><li v-for="rating in saved" :key="rating.student_id">{{ learners.find(learner => learner.id === rating.student_id)?.full_name }} — <strong>{{ rating.competency_level }}</strong><span v-if="rating.remarks"> · {{ rating.remarks }}</span> <button class="history-button" :disabled="working || dirty" :aria-label="`View history for ${learners.find(learner => learner.id === rating.student_id)?.full_name}`" @click="viewHistory(rating)">View history</button></li></ul>
+        <section v-if="historyLearner" aria-labelledby="history-title">
+          <h2 id="history-title">Revision history: {{ historyLearner }}</h2>
+          <p>Each row preserves a saved version. A baseline records the state when history began; earlier edits cannot be reconstructed. Times below are shown in UTC.</p>
+          <p v-if="!history.length">No recorded history is available yet.</p>
+          <div v-else class="table-scroll"><table><caption>{{ historyLearner }} · {{ term }}</caption><thead><tr><th scope="col">Version</th><th scope="col">Event</th><th scope="col">Rating</th><th scope="col">Remarks</th><th scope="col">Recorded (UTC)</th></tr></thead><tbody><tr v-for="revision in history" :key="revision.id"><td>{{ revision.version }}</td><td>{{ revision.event }}</td><td>{{ revision.competency_level }}</td><td>{{ revision.remarks || '—' }}</td><td><time :datetime="revision.recorded_at">{{ revision.recorded_at.replace('T', ' ').replace('.000000Z', ' UTC').replace('Z', ' UTC') }}</time></td></tr></tbody></table></div>
+        </section>
       </template>
     </template>
     <template v-else>
@@ -186,6 +213,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 <style scoped>
 .assessment-page { max-width: 1100px; }
 .manage-link { float: right; }
+.history-button { padding: 7px 12px; margin: 6px 0 6px 12px; }
 fieldset { border: 1px solid #dce6e2; border-radius: 8px; padding: 16px; min-width: 0; }
 legend { font-weight: bold; padding: 0 8px; }
 .selectors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 20px; }
