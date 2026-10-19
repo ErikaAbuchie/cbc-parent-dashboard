@@ -42,5 +42,10 @@ li + li { margin-top: 20px; }
 .bar-track { height: 16px; margin-top: 6px; background: #dce6e2; border-radius: 4px; overflow: hidden; }
 .bar { height: 100%; border-radius: 4px; }
 .scope-note { margin-bottom: 0; font-size: 14px; }
+@media print {
+  .competency-summary { break-inside: avoid; background: #fff; border-color: #999; padding: 12px; }
+  .bar-track, .bar { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .level-label { flex-direction: row; }
+}
 @media (max-width: 480px) { .competency-summary { padding: 14px; } .level-label { flex-direction: column; gap: 2px; } }
 </style>
