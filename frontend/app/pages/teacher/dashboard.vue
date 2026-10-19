@@ -28,6 +28,7 @@ async function logout() {
         <p>Your school account is connected. Record and review your learners' competency ratings.</p>
         <NuxtLink class="assessment-link" to="/teacher/assessments">Enter assessments</NuxtLink>
         <NuxtLink class="assessment-link" to="/teacher/students">Manage students</NuxtLink>
+        <NuxtLink class="assessment-link" to="/teacher/reports">Finalise reports and send parent codes</NuxtLink>
       </template>
       <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
       <button :disabled="pending" @click="logout">{{ pending ? 'Signing out…' : 'Sign out' }}</button>
