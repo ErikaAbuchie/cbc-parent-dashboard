@@ -52,6 +52,9 @@ class TeacherStudentController extends Controller
             SchoolClass::whereKey($class->id)->lockForUpdate()->firstOrFail();
             $student->refresh();
             abort_if($student->trashed(), 409, 'Student was removed. Reload the class.');
+            if (isset($data['parent_phone_number']) && $data['parent_phone_number'] !== $student->parent_phone_number) {
+                ParentAccess::where('student_id', $student->id)->update(['is_active' => false]);
+            }
             $student->update($data);
         });
         return response()->json(['message' => 'Student updated.']);
