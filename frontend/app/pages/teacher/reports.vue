@@ -20,6 +20,26 @@ const errorMessage = ref('')
 const fieldErrors = ref<string[]>([])
 const message = ref('')
 const confirming = ref<ReadyStudent | null>(null)
+const confirmationPanel = ref<HTMLElement | null>(null)
+const feedbackPanel = ref<HTMLElement | null>(null)
+async function revealFeedback() {
+  await nextTick()
+  feedbackPanel.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+async function beginFinalisation(student: ReadyStudent) {
+  confirming.value = student
+  message.value = ''; errorMessage.value = ''; fieldErrors.value = []
+  await nextTick()
+  confirmationPanel.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  confirmationPanel.value?.focus({ preventScroll: true })
+}
+function blockedReason(student: ReadyStudent): string {
+  if (confirming.value) return 'Review the confirmation panel above, or cancel it to choose another learner.'
+  if (!smsConfigured.value) return 'Sending is unavailable until SMS and the queue are configured.'
+  if (!student.phone_ready) return 'Add a valid parent phone number before sending.'
+  if (student.outstanding.length) return 'Save the missing assessments before sending.'
+  return ''
+}
 const statuses: Record<string, string> = { queued: 'Queued for SMS', accepted: 'Accepted by SMS provider; delivery unconfirmed', retrying: 'SMS retry pending', failed: 'SMS failed; code deactivated', cancelled: 'SMS cancelled', not_queued: 'No SMS queued' }
 watch([classId, termNumber, year, selected], () => { learners.value = []; checked.value = false; confirming.value = null; message.value = ''; errorMessage.value = ''; fieldErrors.value = [] }, { deep: true })
 async function handleError(error: any) {
@@ -60,7 +80,7 @@ async function finalise() {
     message.value = `${student.full_name}: ${result.message}`
     await fetchReadiness()
   } catch (error) { await handleError(error) }
-  finally { busy.value = false }
+  finally { busy.value = false; await revealFeedback() }
 }
 </script>
 
@@ -76,10 +96,10 @@ async function finalise() {
       <p v-if="classId && !areas.length && !busy">No curriculum is available for this class.</p>
       <p>{{ selected.length }} sub-strands selected.</p><button :disabled="!selected.length">Check completeness and SMS status</button>
     </fieldset></form>
-    <p v-if="busy" role="status">Working…</p><div v-if="errorMessage" class="error" role="alert">{{ errorMessage }}<p v-for="(item, i) in fieldErrors" :key="i">{{ item }}</p></div><p v-if="message" class="success" role="status">{{ message }}</p>
-    <section v-if="confirming" class="confirmation" aria-labelledby="send-heading"><h2 id="send-heading">Finalise and send a parent code?</h2><p>{{ confirming.full_name }} · {{ term }} · {{ selected.length }} selected sub-strands.</p><p>A new code will be sent to the registered parent number. It replaces any earlier code for this learner and term. The code will not be displayed to you.</p><button :disabled="busy" @click="finalise">Confirm finalisation and SMS</button><button class="secondary" :disabled="busy" @click="confirming = null">Cancel</button></section>
-    <template v-if="checked"><h2>{{ term }} readiness</h2><p v-if="!smsConfigured" class="error">SMS is not configured yet. Set the sandbox credentials, enable SMS, and use a database or Redis queue before finalising.</p><p v-if="!learners.length">No active learners in this class.</p><article v-for="student in learners" :key="student.id"><h3>{{ student.full_name }} · {{ student.admission_number }}</h3><p v-if="student.outstanding.length">Missing assessments: {{ student.outstanding.map(sub => sub.name).join(', ') }}</p><p v-else>All selected sub-strands have assessments.</p><p v-if="!student.phone_ready">Add a valid parent number in <NuxtLink to="/teacher/students">Manage students</NuxtLink>.</p><p v-if="student.sms_status">{{ statuses[student.sms_status] || student.sms_status }}. {{ student.code_active ? 'Code active.' : 'No active code.' }}</p><button :disabled="busy || !!confirming || !smsConfigured || !student.phone_ready || !!student.outstanding.length" @click="confirming = student">{{ student.code_active ? 'Issue replacement code' : 'Finalise and send code' }}</button></article></template>
+    <div ref="feedbackPanel" aria-live="polite" :aria-busy="busy"><p v-if="busy" role="status">Working… Please wait for confirmation.</p><div v-if="errorMessage" class="error" role="alert">{{ errorMessage }}<p v-for="(item, i) in fieldErrors" :key="i">{{ item }}</p></div><p v-if="message" class="success" role="status">{{ message }}</p></div>
+    <section v-if="confirming" ref="confirmationPanel" tabindex="-1" class="confirmation" aria-labelledby="send-heading"><h2 id="send-heading">Finalise and send a parent code?</h2><p>{{ confirming.full_name }} · {{ term }} · {{ selected.length }} selected sub-strands.</p><p><strong>No SMS has been queued yet. Click Confirm finalisation and SMS below to proceed.</strong></p><p>A new code will be sent to the registered parent number. It replaces any earlier code for this learner and term. The code will not be displayed to you.</p><button :disabled="busy" @click="finalise">Confirm finalisation and SMS</button><button class="secondary" :disabled="busy" @click="confirming = null">Cancel</button></section>
+    <template v-if="checked"><h2>{{ term }} readiness</h2><p v-if="!smsConfigured" class="error">SMS is not configured yet. Set the sandbox credentials, enable SMS, and use a database or Redis queue before finalising.</p><p v-if="!learners.length">No active learners in this class.</p><article v-for="student in learners" :key="student.id"><h3>{{ student.full_name }} · {{ student.admission_number }}</h3><p v-if="student.outstanding.length">Missing assessments: {{ student.outstanding.map(sub => sub.name).join(', ') }}</p><p v-else>All selected sub-strands have assessments.</p><p v-if="!student.phone_ready">Add a valid parent number in <NuxtLink to="/teacher/students">Manage students</NuxtLink>.</p><p v-if="student.sms_status">{{ statuses[student.sms_status] || student.sms_status }}. {{ student.code_active ? 'Code active.' : 'No active code.' }}</p><button :disabled="busy || !!confirming || !smsConfigured || !student.phone_ready || !!student.outstanding.length" @click="beginFinalisation(student)">{{ student.code_active ? 'Issue replacement code' : 'Finalise and send code' }}</button><p v-if="blockedReason(student)" role="status">{{ blockedReason(student) }}</p></article></template>
   </template>
 </main></template>
 
-<style scoped>.reports-page { max-width: 900px; }fieldset { border: 1px solid #dce6e2; border-radius: 8px; padding: 20px; }legend { font-weight: bold; }select { width: 100%; padding: 12px; font: inherit; border: 1px solid #9cafa7; border-radius: 6px; background: white; }select:focus-visible { outline: 3px solid #e7b64d; outline-offset: 3px; }.sub-option { display: inline-flex; align-items: center; gap: 8px; margin: 6px 20px 6px 0; font-weight: normal; }.sub-option input { width: auto; }.success { padding: 12px; background: #e4f3e9; }.confirmation { border: 2px solid #176349; border-radius: 8px; padding: 20px; margin: 20px 0; }.secondary { margin-left: 12px; background: #e5ece9; color: #18342d; }article { border-top: 1px solid #dce6e2; padding: 12px 0; }</style>
+<style scoped>.reports-page { max-width: 900px; }button:disabled { cursor: not-allowed; }.confirmation { scroll-margin: 24px; }fieldset { border: 1px solid #dce6e2; border-radius: 8px; padding: 20px; }legend { font-weight: bold; }select { width: 100%; padding: 12px; font: inherit; border: 1px solid #9cafa7; border-radius: 6px; background: white; }select:focus-visible { outline: 3px solid #e7b64d; outline-offset: 3px; }.sub-option { display: inline-flex; align-items: center; gap: 8px; margin: 6px 20px 6px 0; font-weight: normal; }.sub-option input { width: auto; }.success { padding: 12px; background: #e4f3e9; }.confirmation { border: 2px solid #176349; border-radius: 8px; padding: 20px; margin: 20px 0; }.secondary { margin-left: 12px; background: #e5ece9; color: #18342d; }article { border-top: 1px solid #dce6e2; padding: 12px 0; }</style>
