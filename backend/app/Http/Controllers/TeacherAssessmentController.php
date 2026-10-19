@@ -95,15 +95,45 @@ class TeacherAssessmentController extends Controller
                 throw ValidationException::withMessages(['assessments' => 'The class roster changed. Reload learners before saving.']);
             }
             foreach ($data['assessments'] as $row) {
-                Assessment::updateOrCreate([
+                $assessment = Assessment::firstOrNew([
                     'student_id' => $row['student_id'],
                     'sub_strand_id' => $selection['sub_strand_id'],
                     'term' => $selection['term'],
                     'user_id' => $request->user()->id,
-                ], ['competency_level' => $row['competency_level'], 'remarks' => $row['remarks'] ?? null]);
+                ]);
+                $existing = $assessment->exists;
+                // Include a baseline for records inserted through another trusted data import.
+                if ($existing && ! $assessment->revisions()->exists()) {
+                    $assessment->revisions()->create([
+                        'user_id' => $request->user()->id, 'version' => 1, 'event' => 'baseline',
+                        'competency_level' => $assessment->competency_level, 'remarks' => $assessment->remarks,
+                        'recorded_at' => now(),
+                    ]);
+                }
+                $assessment->fill(['competency_level' => $row['competency_level'], 'remarks' => $row['remarks'] ?? null]);
+                if (! $existing || $assessment->isDirty(['competency_level', 'remarks'])) {
+                    $assessment->save();
+                    $assessment->revisions()->create([
+                        'user_id' => $request->user()->id,
+                        'version' => ((int) $assessment->revisions()->max('version')) + 1,
+                        'event' => $existing ? 'updated' : 'created',
+                        'competency_level' => $assessment->competency_level, 'remarks' => $assessment->remarks,
+                        'recorded_at' => now(),
+                    ]);
+                }
             }
         });
 
         return response()->json(['message' => 'Assessments saved.', 'saved_count' => count($data['assessments'])]);
+    }
+
+    public function history(Request $request, int $classId, int $assessmentId): JsonResponse
+    {
+        $class = $this->schoolClass($request, $classId);
+        $assessment = Assessment::where('user_id', $request->user()->id)
+            ->whereIn('student_id', $class->students()->withTrashed()->select('id'))->findOrFail($assessmentId);
+
+        return response()->json(['revisions' => $assessment->revisions()->orderByDesc('version')
+            ->get(['id', 'version', 'event', 'competency_level', 'remarks', 'recorded_at', 'user_id'])]);
     }
 }

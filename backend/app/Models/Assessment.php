@@ -8,6 +8,11 @@ class Assessment extends Model
 {
     protected $fillable = ['student_id', 'sub_strand_id', 'user_id', 'competency_level', 'term', 'remarks'];
 
+    public function revisions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AssessmentRevision::class);
+    }
+
     public function student(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Student::class);
