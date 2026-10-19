@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('parent_accesses');
+        Schema::dropIfExists('parent_access');
     }
 };

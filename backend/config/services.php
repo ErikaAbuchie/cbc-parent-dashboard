@@ -1,6 +1,15 @@
 <?php
 
 return [
+    'africastalking' => [
+        'enabled' => env('AT_SMS_ENABLED', false),
+        'username' => env('AT_USERNAME', 'sandbox'),
+        'key' => env('AT_API_KEY'),
+    ],
+    'parent_access' => [
+        'frontend_url' => env('PARENT_FRONTEND_URL', 'http://localhost:3000'),
+        'proxy_secret' => env('PARENT_PROXY_SECRET', ''),
+    ],
 
     /*
     |--------------------------------------------------------------------------
