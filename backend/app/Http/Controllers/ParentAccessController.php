@@ -53,7 +53,7 @@ class ParentAccessController extends Controller
         return app(\App\Services\ParentReportAccess::class)->resolve($request);
     }
 
-    public function report(Request $request)
+    public function report(Request $request, \App\Services\CompetencyReportSummary $summary)
     {
         [, $student, $report] = $this->context($request);
         $assessments = Assessment::where('student_id', $student->id)->where('user_id', $report->user_id)
@@ -62,6 +62,9 @@ class ParentAccessController extends Controller
             'student' => ['full_name' => $student->full_name, 'admission_number' => $student->admission_number,
                 'class_name' => $student->schoolClass->name, 'school_name' => $student->schoolClass->school->name, 'grade_level' => $student->schoolClass->grade_level],
             'term' => $report->term, 'finalised_at' => $report->finalised_at->toIso8601String(),
+            'has_demo_results' => $assessments->contains(fn ($a) => str_starts_with($a->remarks ?? '', '[DEMO]')),
+            'summary_method' => 'Equal-weight average of included sub-strand ratings: BE=1, AE=2, ME=3, EE=4. Average rounded to two decimals; EE at 3.50–4.00, ME at 2.50–3.49, AE at 1.50–2.49, BE at 1.00–1.49. Project calculation, not an official KICD grading rule.',
+            'subjects' => $summary->subjects($assessments),
             'assessments' => $assessments->map(fn ($a) => ['learning_area' => $a->subStrand->strand->learningArea->name,
                 'strand' => $a->subStrand->strand->name, 'sub_strand' => $a->subStrand->name,
                 'competency_level' => $a->competency_level, 'remarks' => $a->remarks]),
