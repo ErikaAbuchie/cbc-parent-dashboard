@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\CompetencyReportSummary;
 use Database\Seeders\GradeFiveMathematicsSeeder;
 use Database\Seeders\LisaTermDemoSeeder;
+use Database\Seeders\LisaAnnualDemoSeeder;
 use Database\Seeders\SprintTwoDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -73,5 +74,23 @@ class LisaTermReportTest extends TestCase
         $this->assertEquals(round(Assessment::where('student_id', $lisa->id)->whereHas('subStrand.strand.learningArea', fn ($q) => $q->where('name', 'Mathematics'))
             ->get()->avg(fn ($a) => ['BE' => 1, 'AE' => 2, 'ME' => 3, 'EE' => 4][$a->competency_level]), 2), $maths['average_score']);
         $this->assertSame('BE', $maths['strands'][0]['sub_strands'][0]['competency_level']);
+        $this->seed(LisaAnnualDemoSeeder::class);
+        $this->seed(LisaAnnualDemoSeeder::class);
+        $this->assertDatabaseCount('assessments', 507);
+        $this->assertDatabaseCount('assessment_revisions', 506);
+        $this->assertSame('BE', $original->fresh()->competency_level);
+        $this->assertSame('Term 1 2025', $report->fresh()->term);
+        $this->assertSame('Term 3 2025', $access->fresh()->term);
+        $this->assertSame(hash('sha256', '123456'), $access->fresh()->code_hash);
+        $annual = $this->getJson('/api/parent/report', ['Authorization' => 'Bearer '.$token])->assertOk()
+            ->assertJsonPath('term', 'Term 3 2025')->assertJsonCount(8, 'subjects')->assertJsonCount(169, 'assessments');
+        foreach ($annual->json('trend.subjects') as $subject) {
+            $this->assertCount(3, $subject['points']);
+            foreach ($subject['points'] as $point) {
+                $this->assertNotNull($point['average_score']);
+                $this->assertTrue($point['has_demo_results']);
+            }
+        }
+        Queue::assertNothingPushed();
     }
 }
