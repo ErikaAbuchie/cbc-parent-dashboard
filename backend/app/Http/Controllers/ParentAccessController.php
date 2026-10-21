@@ -92,7 +92,7 @@ class ParentAccessController extends Controller
                 'strand' => $a->subStrand->strand->name,
                 'sub_strand' => $a->subStrand->name, 'competency_level' => $a->competency_level])->all();
         abort_if($mode === 'home_tips' && ! $ratings, 404, 'This subject and strand have no assessed results in your report.');
-        $cacheKey = 'parent-explanation:v3:'.hash('sha256', json_encode([$mode, $data['subject_id'] ?? null, $data['strand_id'] ?? null, $report->id, $student->schoolClass->grade_level,
+        $cacheKey = 'parent-explanation:v5:'.hash('sha256', json_encode([$mode, $data['subject_id'] ?? null, $data['strand_id'] ?? null, $report->id, $student->schoolClass->grade_level,
             config('services.ollama'), $ratings], JSON_THROW_ON_ERROR));
         if ($cached = Cache::get($cacheKey)) return response()->json($cached)->header('Cache-Control', 'no-store');
         $limitKey = 'parent-explanation:'.$session->parent_access_id;

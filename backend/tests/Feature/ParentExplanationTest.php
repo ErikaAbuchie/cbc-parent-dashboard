@@ -65,8 +65,11 @@ class ParentExplanationTest extends TestCase
         Http::assertSent(function ($request) {
             $prompt = $request['prompt'];
             $data = json_decode($prompt, true);
-            return $data['counts_by_learning_area']['Mathematics']['AE'] === 1
-                && !isset($data['counts_by_learning_area']['Mathematics']['EE'])
+            return $data['recorded_totals']['AE'] === 1 && $data['total_assessed_skills'] === 1
+                && $request['options']['num_ctx'] === 2048 && $request['options']['num_batch'] === 128
+                && $request['format']['required'] === ['summary', 'activity'] && $request['format']['additionalProperties'] === false
+                && $data['recorded_totals']['EE'] === 0 && !isset($data['counts_by_learning_area'])
+                && !str_contains($prompt, 'Mathematics')
                 && !str_contains($prompt, 'Private teacher remark') && !str_contains($prompt, 'DEMO-')
                 && !str_contains($prompt, 'Ignore results') && !str_contains($prompt, 'full_name');
         });
@@ -184,5 +187,27 @@ class ParentExplanationTest extends TestCase
         $this->assertSame('incomplete_response', app(AIService::class)->explainReport($ratings, 5)['fallback_reason']);
         config(['services.ollama.enabled' => false]);
         $this->assertSame('disabled', app(AIService::class)->explainReport($ratings, 5)['fallback_reason']);
+    }
+
+    public function test_provider_memory_errors_are_identified_without_exposing_raw_error(): void
+    {
+        Http::fake(['*' => Http::response(['error' => 'failed to allocate CPU buffer: private internal path'], 500)]);
+        $this->postJson('/api/parent/explanation', [], $this->headers)->assertOk()
+            ->assertJsonPath('fallback_reason', 'memory')->assertDontSee('private internal path');
+    }
+
+    public function test_home_tip_input_is_bounded_but_counts_include_all_selected_ratings(): void
+    {
+        $this->fakeModel();
+        $ratings = [];
+        foreach (range(1, 20) as $i) $ratings[] = ['learning_area' => 'Mathematics', 'strand' => 'Numbers',
+            'sub_strand' => 'Example '.$i, 'competency_level' => $i === 20 ? 'BE' : 'ME'];
+        app(AIService::class)->explainReport($ratings, 5, 'home_tips');
+        Http::assertSent(function ($request) {
+            $data = json_decode($request['prompt'], true);
+            return count($data['selected_strand_ratings']) === 6 && $data['selected_strand_assessed_count'] === 20
+                && $data['counts_by_learning_area']['Mathematics']['ME'] === 19
+                && $data['selected_strand_ratings'][0]['competency_level'] === 'BE';
+        });
     }
 }
