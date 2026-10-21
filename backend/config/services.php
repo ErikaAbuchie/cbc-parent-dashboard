@@ -5,6 +5,7 @@ return [
         'enabled' => env('OLLAMA_ENABLED', true),
         'url' => env('OLLAMA_URL', 'http://127.0.0.1:11434'),
         'model' => env('OLLAMA_MODEL', 'phi3:mini'),
+        'timeout' => 120,
     ],
     'africastalking' => [
         'enabled' => env('AT_SMS_ENABLED', false),

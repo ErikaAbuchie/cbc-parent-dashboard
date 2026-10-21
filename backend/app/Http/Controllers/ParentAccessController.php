@@ -92,13 +92,13 @@ class ParentAccessController extends Controller
                 'strand' => $a->subStrand->strand->name,
                 'sub_strand' => $a->subStrand->name, 'competency_level' => $a->competency_level])->all();
         abort_if($mode === 'home_tips' && ! $ratings, 404, 'This subject and strand have no assessed results in your report.');
-        $cacheKey = 'parent-explanation:v2:'.hash('sha256', json_encode([$mode, $data['subject_id'] ?? null, $data['strand_id'] ?? null, $report->id, $student->schoolClass->grade_level,
+        $cacheKey = 'parent-explanation:v3:'.hash('sha256', json_encode([$mode, $data['subject_id'] ?? null, $data['strand_id'] ?? null, $report->id, $student->schoolClass->grade_level,
             config('services.ollama'), $ratings], JSON_THROW_ON_ERROR));
         if ($cached = Cache::get($cacheKey)) return response()->json($cached)->header('Cache-Control', 'no-store');
         $limitKey = 'parent-explanation:'.$session->parent_access_id;
         abort_if(RateLimiter::tooManyAttempts($limitKey, 3), 429, 'Please wait a minute before requesting another explanation.');
         RateLimiter::hit($limitKey, 60);
-        $lock = Cache::lock($cacheKey.':lock', 55);
+        $lock = Cache::lock($cacheKey.':lock', 130);
         abort_unless($lock->get(), 429, 'An explanation is already being prepared. Please try again shortly.');
         try {
             $result = $ai->explainReport($ratings, (int) $student->schoolClass->grade_level, $mode);

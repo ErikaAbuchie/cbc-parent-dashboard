@@ -170,4 +170,19 @@ class ParentExplanationTest extends TestCase
         Http::assertNothingSent();
         $this->assertSame('empty', app(AIService::class)->explainReport([], 5)['source']);
     }
+
+    public function test_fallback_reason_distinguishes_timeouts_disabled_ai_and_truncation_without_provider_details(): void
+    {
+        $ratings = [['learning_area' => 'Mathematics', 'strand' => 'Numbers', 'sub_strand' => 'Whole Numbers', 'competency_level' => 'AE']];
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: sensitive address'));
+        $result = app(AIService::class)->explainReport($ratings, 5);
+        $this->assertSame('timeout', $result['fallback_reason']);
+        $this->assertStringNotContainsString('sensitive address', json_encode($result));
+        Http::swap(new \Illuminate\Http\Client\Factory);
+        Http::preventStrayRequests();
+        Http::fake(['*' => Http::response(['done' => true, 'done_reason' => 'length', 'response' => '{}'])]);
+        $this->assertSame('incomplete_response', app(AIService::class)->explainReport($ratings, 5)['fallback_reason']);
+        config(['services.ollama.enabled' => false]);
+        $this->assertSame('disabled', app(AIService::class)->explainReport($ratings, 5)['fallback_reason']);
+    }
 }
