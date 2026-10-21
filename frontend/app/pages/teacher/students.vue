@@ -16,6 +16,7 @@ const form = reactive({ full_name: '', admission_number: '', parent_phone_number
 const initial = ref(JSON.stringify(form))
 const originalPhone = ref('')
 const membershipChange = ref<{ student: Student; restore: boolean } | null>(null)
+const membershipPanel = ref<HTMLElement | null>(null)
 const dirty = computed(() => JSON.stringify(form) !== initial.value)
 const search = ref('')
 const matchesSearch = (student: Student) => `${student.full_name} ${student.admission_number}`.toLowerCase().includes(search.value.trim().toLowerCase())
@@ -86,9 +87,13 @@ async function saveStudent() {
   } catch (error) { await reportError(error) }
   finally { busy.value = false }
 }
-function requestMembershipChange(student: Student, restore = false) {
+async function requestMembershipChange(student: Student, restore = false) {
   if (dirty.value) { errorMessage.value = 'Save or cancel your student details before changing the roster.'; return }
   membershipChange.value = { student, restore }
+  await nextTick()
+  if (membershipChange.value?.student.id !== student.id) return
+  membershipPanel.value?.focus({ preventScroll: true })
+  membershipPanel.value?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
 }
 async function confirmMembershipChange() {
   if (!membershipChange.value || busy.value) return
@@ -129,7 +134,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
       <button v-if="classId && !rosterLoaded && !busy" @click="loadClass">Retry loading class</button>
       <template v-if="rosterLoaded">
         <h2>{{ editingId ? 'Edit student' : 'Add student' }}</h2>
-        <section v-if="membershipChange" class="confirmation" role="region" aria-labelledby="membership-heading">
+        <section v-if="membershipChange" ref="membershipPanel" class="confirmation" tabindex="-1" role="region" aria-labelledby="membership-heading">
           <h2 id="membership-heading">{{ membershipChange.restore ? 'Restore student?' : 'Remove student?' }}</h2>
           <p>{{ membershipChange.student.full_name }} will be {{ membershipChange.restore ? 'restored to' : 'removed from' }} this class's active roster.</p>
           <p v-if="!membershipChange.restore">Assessment history will be retained. Existing parent access codes will be deactivated.</p>
@@ -169,5 +174,6 @@ fieldset { border: 1px solid #dce6e2; border-radius: 8px; padding: 20px; }
 .roster button { margin-top: 0; }
 small { display: block; margin-top: 6px; }
 .success { padding: 12px; border-radius: 6px; background: #e4f3e9; }
-.confirmation { padding: 20px; margin: 20px 0; border: 2px solid #176349; border-radius: 8px; background: #f2f6f5; }
+.confirmation { padding: 20px; margin: 20px 0; border: 2px solid #176349; border-radius: 8px; background: #f2f6f5; scroll-margin-top: 96px; }
+.confirmation:focus-visible { outline: 2px solid #176349; outline-offset: 4px; }
 </style>
