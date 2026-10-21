@@ -4,7 +4,7 @@
 
 The first action explains EE, ME, AE and BE in everyday language, then summarises the recorded subject results. The page always displays a fixed rating guide for all four levels, including zero counts. Means shown elsewhere are supplementary rubric averages, not official overall grades or test percentages.
 
-The summary prompt asks for short sentences, supported strengths and support needs, and no home activities. The model receives only grade level, counts by subject and up to five example topics with AE/BE. Names, admission numbers, contact details, teacher remarks and access credentials are excluded.
+The summary prompt asks for short sentences about recorded skill counts and no home activities. It receives grade level, the four rating totals and combined support/meeting counts. Subject names and individual topic ratings are omitted from this prompt to prevent it assigning unsupported whole-subject grades. The report's subject sections remain the source for subject detail. Names, admission numbers, contact details, teacher remarks and access credentials are excluded.
 
 ## Home tips
 
@@ -27,6 +27,18 @@ In PowerShell, `ollama list` should include the configured model, normally `phi3
 21 October 2026: a synthetic request reproduced the old 45-second timeout. After increasing the limit, the exact summary service returned validated model output in 51.12 seconds. No learner details were used in that diagnostic request.
 
 The home-tips service also returned validated model output in 44.48 seconds. All nine AI feature tests passed with 71 assertions after the timeout/diagnostic changes. Response times vary with model load and hardware; the fallback remains available.
+
+### Low-memory diagnosis
+
+A later full-report test returned HTTP 500. Ollama's local log recorded allocation failures for the KV cache and CPU model buffer; increasing timeouts cannot solve an allocation failure. Requests now explicitly use a 2,048-token context and batch size 128. Home tips include up to six examples, prioritising BE/AE, while subject counts still include every authorised selected rating. Tests verify these limits and a safe `memory` fallback reason. Raw provider error messages are never shown to parents.
+
+Responses now use Ollama's JSON schema format to require `summary` and `activity` fields. A 0.5B model trial returned valid JSON but insufficiently useful wording, so it was not selected for the app. Windows also reported insufficient resources during a larger alternative model download; freeing memory is required before repeating model validation. The configured model has not been changed by those diagnostic trials. All eleven AI feature tests pass (75 assertions); the frontend production build passes.
+
+The larger model download was stopped after repeated Windows resource failures; it is not installed or configured. The 0.5B diagnostic model was unloaded from memory. Save work and close unused applications before repeating the configured model test. Do not stop unrelated processes or change the app to an unverified model merely to remove the fallback label.
+
+22 October 2026: closing OneDrive released approximately 15 GB of committed memory; available committed memory rose to about 17 GB. The configured phi3:mini model then loaded successfully. A live test using all 169 ratings from Lisa's report returned an accurate count-based summary in 30.64 seconds after the summary input was simplified. All eleven AI feature tests passed (75 assertions). The configured model was retained. Keep OneDrive closed during the demonstration; investigate its resource use separately before resuming syncing. No project files were moved or deleted.
+
+The live Mathematics → Numbers home-tip request (eight assessed skills) also returned validated model output in 46.43 seconds. Parent-browser verification remains a separate final check: refresh the report and request each action again rather than reading the prior fallback response.
 
 ## Verification
 

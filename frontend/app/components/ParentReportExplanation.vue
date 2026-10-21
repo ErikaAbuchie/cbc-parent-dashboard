@@ -2,7 +2,7 @@
 type Explanation = { source: 'model' | 'fallback' | 'empty'; fallback_reason?: string; model: string | null; summary: string; activity: string; level_guide: { code: string; count: number; meaning: string }[] }
 function fallbackMessage(value: Explanation) {
   if (value.source !== 'fallback') return ''
-  return ({ timeout: 'The AI took too long. Please try again shortly.', connection: 'The app could not connect to the AI service.', disabled: 'AI is switched off in the server settings.', provider_error: 'The AI service could not process this request.', incomplete_response: 'The AI response was incomplete. Please try again.' } as Record<string, string>)[value.fallback_reason || ''] || 'The AI did not return a usable explanation. Please try again.'
+  return ({ memory: 'The AI service ran out of memory. Please ask the school administrator to check the AI setup.', timeout: 'The AI took too long. Please try again shortly.', connection: 'The app could not connect to the AI service.', disabled: 'AI is switched off in the server settings.', provider_error: 'The AI service could not process this request.', incomplete_response: 'The AI response was incomplete. Please try again.' } as Record<string, string>)[value.fallback_reason || ''] || 'The AI did not return a usable explanation. Please try again.'
 }
 type Subject = { id: number; name: string; strands: { id: number; name: string }[] }
 const props = defineProps<{ subjects: Subject[] }>()
