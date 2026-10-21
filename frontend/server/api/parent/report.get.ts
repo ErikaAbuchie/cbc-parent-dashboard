@@ -1,6 +1,9 @@
 type ParentReport = {
   student: { full_name: string; admission_number: string; class_name: string; school_name: string; grade_level: number }
-  term: string; finalised_at: string
+  term: string; finalised_at: string; has_demo_results: boolean; summary_method: string
+  subjects: { id: number; name: string; summary_level: string | null; average_score: number | null; assessed_count: number;
+    strands: { id: number; name: string; summary_level: string | null; average_score: number | null; assessed_count: number;
+      sub_strands: { id: number; name: string; competency_level: string; remarks: string | null }[] }[] }[]
   assessments: { learning_area: string; strand: string; sub_strand: string; competency_level: string; remarks: string | null }[]
 }
 
