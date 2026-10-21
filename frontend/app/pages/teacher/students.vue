@@ -17,6 +17,10 @@ const initial = ref(JSON.stringify(form))
 const originalPhone = ref('')
 const membershipChange = ref<{ student: Student; restore: boolean } | null>(null)
 const dirty = computed(() => JSON.stringify(form) !== initial.value)
+const search = ref('')
+const matchesSearch = (student: Student) => `${student.full_name} ${student.admission_number}`.toLowerCase().includes(search.value.trim().toLowerCase())
+const visibleActive = computed(() => active.value.filter(matchesSearch))
+const visibleRemoved = computed(() => removed.value.filter(matchesSearch))
 const active = computed(() => students.value.filter(student => !student.deleted_at))
 const removed = computed(() => students.value.filter(student => student.deleted_at))
 const endpoint = computed(() => `/api/teacher/classes/${classId.value}/students`)
@@ -141,12 +145,12 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
           <button type="submit" :disabled="!dirty">{{ editingId ? 'Save student details' : 'Add student' }}</button>
           <button v-if="editingId || dirty" type="button" class="secondary" @click="cancelEdit">Cancel</button>
         </fieldset></form>
-        <h2>Active learners ({{ active.length }})</h2>
+        <h2>Active learners ({{ active.length }})</h2><label for="learner-search">Find a learner</label><input id="learner-search" v-model="search" type="search" placeholder="Search name or admission number" autocomplete="off"><p v-if="search.trim()">{{ visibleActive.length }} active {{ visibleActive.length === 1 ? 'learner matches' : 'learners match' }} your search.</p>
         <p v-if="!active.length">No active learners in this class.</p>
-        <ul class="roster"><li v-for="student in active" :key="student.id"><div><strong>{{ student.full_name }}</strong><small>{{ student.admission_number }}</small></div><div><button :disabled="busy || !!membershipChange" @click="editStudent(student)">Edit</button><button class="remove" :disabled="busy || dirty || !!membershipChange" @click="requestMembershipChange(student)">Remove</button></div></li></ul>
+        <ul class="roster"><li v-for="student in visibleActive" :key="student.id"><div><strong>{{ student.full_name }}</strong><small>{{ student.admission_number }}</small></div><div><button :disabled="busy || !!membershipChange" @click="editStudent(student)">Edit</button><button class="remove" :disabled="busy || dirty || !!membershipChange" @click="requestMembershipChange(student)">Remove</button></div></li></ul>
         <h2>Removed learners ({{ removed.length }})</h2>
         <p v-if="!removed.length">No removed learners.</p>
-        <ul class="roster"><li v-for="student in removed" :key="student.id"><div><strong>{{ student.full_name }}</strong><small>{{ student.admission_number }}</small></div><button :disabled="busy || dirty || !!membershipChange" @click="requestMembershipChange(student, true)">Restore</button></li></ul>
+        <ul class="roster"><li v-for="student in visibleRemoved" :key="student.id"><div><strong>{{ student.full_name }}</strong><small>{{ student.admission_number }}</small></div><button :disabled="busy || dirty || !!membershipChange" @click="requestMembershipChange(student, true)">Restore</button></li></ul>
       </template>
     </template>
   </main>

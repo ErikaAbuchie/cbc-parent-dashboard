@@ -179,11 +179,11 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
           <fieldset :disabled="working">
             <legend>Learner ratings</legend>
             <div class="table-scroll">
-              <table><caption>Enter ratings for {{ rows.length }} learners</caption><thead><tr><th scope="col">Learner</th><th scope="col">Competency</th><th scope="col">Remarks (optional)</th></tr></thead>
+              <table class="ratings-table"><caption>Enter ratings for {{ rows.length }} learners</caption><thead><tr><th scope="col">Learner</th><th scope="col">Competency</th><th scope="col">Remarks (optional)</th></tr></thead>
                 <tbody><tr v-for="row in rows" :key="row.id">
                   <th scope="row">{{ row.full_name }}<small>{{ row.admission_number }}</small></th>
-                  <td><select v-model="row.competency_level" :aria-label="`Competency for ${row.full_name}`" required><option value="">Select rating</option><option v-for="level in levels" :key="level.code" :value="level.code">{{ level.code }} — {{ level.label }}</option></select></td>
-                  <td><textarea v-model="row.remarks" :aria-label="`Remarks for ${row.full_name}`" maxlength="2000" rows="2" /></td>
+                  <td data-label="Competency rating"><select v-model="row.competency_level" :aria-label="`Competency for ${row.full_name}`" required><option value="">Select rating</option><option v-for="level in levels" :key="level.code" :value="level.code">{{ level.code }} — {{ level.label }}</option></select></td>
+                  <td data-label="Teacher remarks"><textarea v-model="row.remarks" :aria-label="`Remarks for ${row.full_name}`" maxlength="2000" rows="2" /></td>
                 </tr></tbody>
               </table>
             </div>
@@ -230,4 +230,7 @@ small { display: block; font-weight: normal; margin-top: 6px; }
 .field-error { display: block; margin-top: 4px; }
 li { margin-bottom: 10px; line-height: 1.5; }
 @media (max-width: 700px) { .selectors { grid-template-columns: 1fr; } }
+@media (max-width: 700px) {
+  .ratings-table { display: block; min-width: 0; }.ratings-table caption { display: block; }.ratings-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }.ratings-table tbody { display: block; }.ratings-table tr { display: block; margin-bottom: 18px; border: 1px solid #dce6e2; border-radius: 12px; padding: 10px; background: #fcfefd; }.ratings-table th, .ratings-table td { display: block; width: 100%; border: 0; padding: 8px; }.ratings-table td:before { content: attr(data-label); display: block; font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #5f7d71; }.secondary { margin-left: 0; margin-right: 8px; }
+}
 </style>
