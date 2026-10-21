@@ -25,7 +25,7 @@ async function closeReport() {
       <ParentCompetencySummary :assessments="report.assessments" />
       <ParentReportCharts :subjects="report.subjects" :trend="report.trend" />
       <ParentSubjectResults :subjects="report.subjects" :method="report.summary_method" :demo="report.has_demo_results" />
-      <ParentReportExplanation v-if="report.assessments.length" />
+      <ParentReportExplanation v-if="report.assessments.length" :subjects="report.subjects" />
       <ParentPracticeResults />
       <div class="report-actions close-report-row"><span>Your report is available only through verified parent access.</span><button class="secondary" :disabled="busy" @click="closeReport">{{ busy ? 'Closing…' : 'Close report' }}</button></div><p v-if="errorMessage" class="error report-actions" role="alert">{{ errorMessage }}</p>
       <p class="printed-note">This copy shows the results displayed when printed. Later teacher updates will appear when the online report is reloaded.</p>
