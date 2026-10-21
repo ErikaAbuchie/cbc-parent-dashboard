@@ -1,0 +1,355 @@
+[
+  {
+    "name": "Agriculture",
+    "grade_level": 5,
+    "source_url": "https://drive.google.com/file/d/1jlMN272UeRa-FbyB5es488O5jI9llekn/view",
+    "source_pages": "xii",
+    "notes": "",
+    "strands": {
+      "Conservation of Resources": [
+        "Soil Conservation",
+        "Water Conservation",
+        "Conserving Wild Animals"
+      ],
+      "Food Production Processes": [
+        "Growing Vegetables",
+        "Uses of Domestic Animals",
+        "Preservation of Cereals and Pulses",
+        "Food Nutrients",
+        "Cooking Food"
+      ],
+      "Hygiene Practices": [
+        "Good Grooming Practices",
+        "Home Hygiene",
+        "Laundering Cotton Item"
+      ],
+      "Production Techniques": [
+        "Repairing Garments",
+        "Constructing Innovative Gardens"
+      ]
+    }
+  },
+  {
+    "name": "Creative Arts",
+    "grade_level": 5,
+    "source_url": "https://drive.google.com/file/d/1euaxMgHyMqSm4qVSzOeJ_-9LXYgj6jyS/view",
+    "source_pages": "xiii–xiv",
+    "notes": "Swimming and Indigenous Kenyan Games are alternatives in the design; select only the applicable option when finalising a report.",
+    "strands": {
+      "Creating and Executing": [
+        "Wind Musical Instruments (Drawing)",
+        "Football",
+        "Rhythm",
+        "Painting and Mosaic",
+        "Melody",
+        "Rounders"
+      ],
+      "Performing and Displaying": [
+        "Athletics",
+        "Fabric Decoration",
+        "Kenyan Folk Dance",
+        "Puppetry",
+        "Descant Recorder",
+        "Swimming (Optional)",
+        "Indigenous Kenyan Games (Optional)"
+      ],
+      "Appreciation in Creative Arts": [
+        "Analysis of Creative Arts Works"
+      ]
+    }
+  },
+  {
+    "name": "Christian Religious Education",
+    "grade_level": 5,
+    "source_url": "https://drive.google.com/file/d/1unhtcU1tzdsPceoadKCovjFIkPTF1wP4/view",
+    "source_pages": "xi–xii",
+    "notes": "",
+    "strands": {
+      "Creation": [
+        "My Purpose (Talents and Abilities)",
+        "Work",
+        "The Fall of Man",
+        "Family Unity"
+      ],
+      "The Bible": [
+        "The Bible as a Guide",
+        "Bible Stories: Peter and John in the Temple",
+        "King Solomon the Wise Ruler",
+        "Noah and His Sons",
+        "A Hand Writes on the Wall",
+        "Mount Carmel Contest",
+        "God's Protection",
+        "The Call of Moses"
+      ],
+      "The Life of Jesus Christ": [
+        "John the Baptist",
+        "The Baptism of Jesus Christ",
+        "Calming the Storm",
+        "Feeding the Four Thousand",
+        "Healing the Paralysed Man",
+        "Parable of the Lost Sheep",
+        "Sermon on the Mount",
+        "The Rich Young Ruler",
+        "A Friend at Midnight"
+      ],
+      "The Church": [
+        "The Early Church",
+        "The Lord's Supper",
+        "The Holy Spirit",
+        "Peter's Miraculous Rescue"
+      ],
+      "Christian Living": [
+        "Friendship Formation",
+        "Human Sexuality",
+        "Sanctity of Life",
+        "Alcohol, Drugs and Substance Abuse",
+        "Social Media"
+      ]
+    }
+  },
+  {
+    "name": "English",
+    "grade_level": 5,
+    "source_url": "https://drive.google.com/file/d/1ctDo-PB4W6AKbKV0Lb-1OobOC2-L3_e_/view",
+    "source_pages": "xii",
+    "notes": "Uses the design summary skill categories. These aggregate repeated thematic units; individual theme lessons and outcomes are not imported.",
+    "strands": {
+      "Listening and Speaking": [
+        "Listening Comprehension",
+        "Pronunciation and Vocabulary",
+        "Speaking Fluency"
+      ],
+      "Reading": [
+        "Extensive Reading",
+        "Intensive Reading",
+        "Fluency"
+      ],
+      "Grammar in Use": [
+        "Word Classes",
+        "Language Patterns",
+        "Tense"
+      ],
+      "Writing": [
+        "Creative Writing",
+        "Functional Writing",
+        "Mechanics of Writing"
+      ]
+    }
+  },
+  {
+    "name": "Hindu Religious Education",
+    "grade_level": 5,
+    "source_url": "https://drive.google.com/file/d/1O7MWGBaA5Iwl5HKmKrEw6XmI-qzFgU1c/view",
+    "source_pages": "xi",
+    "notes": "",
+    "strands": {
+      "Creation": [
+        "Care for Creation",
+        "Medicinal Plants and Trees"
+      ],
+      "Enlightened Beings": [
+        "Enlightened Beings and Social Welfare"
+      ],
+      "Scriptures": [
+        "Scriptural Stories on Family Values"
+      ],
+      "Worship": [
+        "Importance of Features in Jain Derasar and Sikh Gurdwara",
+        "Places of Worship"
+      ],
+      "Sadachaar (Social Ethics)": [
+        "Friendship and Keeping Promises"
+      ],
+      "Yoga (Holistic Wellness)": [
+        "Physical Aspect",
+        "Communal Aspect"
+      ],
+      "Principles of Dharma": [
+        "Virtues of Righteousness: Jain and Sikh Moral Stories"
+      ],
+      "Utsav (Social Festivals)": [
+        "Utsav"
+      ]
+    }
+  },
+  {
+    "name": "Islamic Religious Education",
+    "grade_level": 5,
+    "source_url": "https://drive.google.com/file/d/10RolK-hE8ylrhuNbq3fN6ZnPlgNM_VuB/view",
+    "source_pages": "xi–xii",
+    "notes": "Nested summary headings are combined with their named focus to make selectable assessment labels.",
+    "strands": {
+      "Qur'an": [
+        "Selected Chapters (Surah)"
+      ],
+      "Hadith": [
+        "Hadith on Good Behaviour",
+        "Hadith on Greetings",
+        "Hadith on Knowledge",
+        "Hadith on Gratitude"
+      ],
+      "Pillars of Iman": [
+        "Belief in Allah",
+        "Belief in Angels",
+        "Belief in Prophets",
+        "Miracles of Prophets"
+      ],
+      "Devotional Acts": [
+        "Nullifiers of Swalah",
+        "Sunnah (Optional) Prayers: Taraweh and Witr",
+        "Swadaqah (Charity)",
+        "Saum: Nullifiers of Saum (Fasting)"
+      ],
+      "Akhlaq (Moral Teachings)": [
+        "Virtues: Generosity",
+        "Effects of Social Media",
+        "Prohibitions in Islam: Evils of Gambling",
+        "Dua (Supplication): Increase in Knowledge"
+      ],
+      "Muamalat (Social Relations)": [
+        "Etiquette of Islamic Wedding Celebrations",
+        "Rights of Neighbours",
+        "Islamic Rules on Buying and Selling"
+      ],
+      "History of Islam": [
+        "Al-Isra wal Miraj",
+        "Pledges of Aqabah",
+        "Hijra to Madina",
+        "Constitution of Madina"
+      ]
+    }
+  },
+  {
+    "name": "Kiswahili",
+    "grade_level": 5,
+    "source_url": "https://drive.google.com/file/d/1aGnwbMdfKkwTBtVOcliEiyge6qAHpHhd/view",
+    "source_pages": "xiii–xv",
+    "notes": "Unit codes distinguish repeated skills in different thematic units. Obvious spacing/numbering/typing inconsistencies in the summary are normalised; source pages remain the reference.",
+    "strands": {
+      "Kusikiliza na Kuzungumza": [
+        "1.1.1 Matamshi Bora",
+        "2.1.1 Maamkuzi na Maagano",
+        "3.1.1 Vitendawili",
+        "4.1.1 Heshima Adabu na Vyeo",
+        "5.1.1 Methali",
+        "6.1.1 Ushairi",
+        "7.1.1 Nahau",
+        "8.1.1 Visawe",
+        "9.1.1 Mazungumzo ya Kimuktadha",
+        "10.1.1 Tashbihi",
+        "11.1.1 Masimulizi"
+      ],
+      "Kusoma": [
+        "1.2.1 Kusoma kwa Ufahamu",
+        "2.2.1 Kusoma kwa Kina",
+        "3.2.1 Kusoma kwa Ufasaha",
+        "4.2.1 Kusoma kwa Mapana",
+        "5.2.1 Kusoma kwa Ufahamu",
+        "6.2.1 Kusoma kwa Kina",
+        "7.2.1 Kusoma kwa Mapana",
+        "8.2.1 Kusoma kwa Ufahamu",
+        "9.2.1 Kusoma kwa Mapana",
+        "10.2.1 Kusoma Kidijitali",
+        "11.2.1 Kusoma kwa Ufasaha"
+      ],
+      "Kuandika": [
+        "1.3.1 Insha ya Wasifu",
+        "2.3.1 Insha ya Masimulizi",
+        "3.3.1 Kuandika kwa Tarakilishi",
+        "4.3.1 Baruapepe",
+        "5.3.1 Insha za Maelezo",
+        "6.3.1 Insha za Masimulizi",
+        "7.3.1 Insha za Maelezo",
+        "8.3.1 Insha za Masimulizi",
+        "9.3.1 Kuandika Maelezo",
+        "10.3.1 Insha za Masimulizi",
+        "11.3.1 Baruapepe"
+      ],
+      "Sarufi": [
+        "1.4.1 Nomino za Pekee",
+        "1.4.2 Nomino za Kawaida",
+        "2.4.1 Nomino za Wingi",
+        "2.4.2 Vitenzi Jina",
+        "2.4.3 Nomino Ambata",
+        "3.4.1 Nomino za Makundi",
+        "3.4.2 Nomino Ambata",
+        "3.4.3 Nomino Dhahania",
+        "3.4.4 Uakifishaji",
+        "4.4.1 Ngeli ya I-ZI",
+        "5.4.1 Ngeli ya U-ZI",
+        "6.4.1 Ngeli ya U-YA",
+        "7.4.1 Ngeli ya KU-KU",
+        "8.4.1 Mnyambuliko wa Vitenzi",
+        "9.4.1 Vinyume vya Vitenzi",
+        "10.4.1 Nyakati na Hali",
+        "11.4.1 Ukanushaji",
+        "11.4.2 Ukubwa na Udogo wa Nomino",
+        "11.4.3 Udogo wa Nomino"
+      ]
+    }
+  },
+  {
+    "name": "Science and Technology",
+    "grade_level": 5,
+    "source_url": "https://drive.google.com/file/d/1CituzlfluxqVvjExx7xHiV_j_ZDXwpja/view",
+    "source_pages": "xiii",
+    "notes": "",
+    "strands": {
+      "Living Things and Their Environment": [
+        "Classification of Plants",
+        "Invertebrates",
+        "The Human Breathing System"
+      ],
+      "Matter": [
+        "Mixtures",
+        "Water Pollution"
+      ],
+      "Force and Energy": [
+        "Floating and Sinking",
+        "Sound Energy",
+        "Heat Transfer"
+      ]
+    }
+  },
+  {
+    "name": "Social Studies",
+    "grade_level": 5,
+    "source_url": "https://drive.google.com/file/d/1uOCVkljUKcfMkRs1gwAbDZMj_p9cjbut/view",
+    "source_pages": "xii–xiii",
+    "notes": "",
+    "strands": {
+      "Natural and the Built Environments": [
+        "Elements of a Map",
+        "Location, Position and Size of Kenya",
+        "Main Physical Features in Kenya",
+        "Weather and Climate",
+        "The Built Environments"
+      ],
+      "People and Social Organisation": [
+        "Language Groups in Kenya",
+        "Population Distribution in Kenya",
+        "African Traditional Education",
+        "School Administration"
+      ],
+      "Resources and Economic Activities in Eastern Africa": [
+        "Resources in Kenya",
+        "Mining in Kenya",
+        "Fishing in Kenya",
+        "Wildlife and Tourism in Kenya",
+        "Development of Transport",
+        "Development of Communication"
+      ],
+      "Political Systems": [
+        "Traditional Leaders in Kenya",
+        "Early Forms of Government in Kenya",
+        "Citizenship in Kenya"
+      ],
+      "Governance": [
+        "National Unity in Kenya",
+        "Human Rights",
+        "Democracy in Society",
+        "National Government"
+      ]
+    }
+  }
+]
