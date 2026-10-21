@@ -23,6 +23,7 @@ async function closeReport() {
       <div class="report-actions report-toolbar"><NuxtLink class="practice-link" to="/parent/practice"><HubIcon name="practice" />Open learner practice</NuxtLink><button type="button" :disabled="busy" @click="printReport"><HubIcon name="report" />Print / Save as PDF</button></div>
       <p class="report-actions print-help">In the print window, choose your printer or Save as PDF. Turn off browser headers and footers for a cleaner copy.</p>
       <ParentCompetencySummary :assessments="report.assessments" />
+      <ParentReportCharts :subjects="report.subjects" :trend="report.trend" />
       <ParentSubjectResults :subjects="report.subjects" :method="report.summary_method" :demo="report.has_demo_results" />
       <ParentReportExplanation v-if="report.assessments.length" />
       <ParentPracticeResults />
