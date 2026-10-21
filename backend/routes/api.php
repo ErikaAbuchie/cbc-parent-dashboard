@@ -29,6 +29,10 @@ Route::middleware('auth:sanctum')->prefix('teacher')->group(function () {
 Route::post('/parent/verify', [ParentAccessController::class, 'verify']);
 Route::get('/parent/report', [ParentAccessController::class, 'report']);
 Route::post('/parent/explanation', [ParentAccessController::class, 'explanation']);
+Route::get('/parent/practice', [\App\Http\Controllers\ParentPracticeController::class, 'index']);
+Route::post('/parent/practice', [\App\Http\Controllers\ParentPracticeController::class, 'start']);
+Route::get('/parent/practice/{id}', [\App\Http\Controllers\ParentPracticeController::class, 'show'])->whereNumber('id');
+Route::post('/parent/practice/{id}/submit', [\App\Http\Controllers\ParentPracticeController::class, 'submit'])->whereNumber('id');
 Route::post('/parent/logout', [ParentAccessController::class, 'logout']);
 
 Route::get('/user', function (Request $request) {
