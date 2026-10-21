@@ -58,13 +58,15 @@ class ParentAccessController extends Controller
         [, $student, $report] = $this->context($request);
         $assessments = Assessment::where('student_id', $student->id)->where('user_id', $report->user_id)
             ->where('term', $report->term)->whereIn('sub_strand_id', $report->sub_strand_ids)->with('subStrand.strand.learningArea')->get();
+        $subjects = $summary->subjects($assessments);
         return response()->json([
             'student' => ['full_name' => $student->full_name, 'admission_number' => $student->admission_number,
                 'class_name' => $student->schoolClass->name, 'school_name' => $student->schoolClass->school->name, 'grade_level' => $student->schoolClass->grade_level],
             'term' => $report->term, 'finalised_at' => $report->finalised_at->toIso8601String(),
             'has_demo_results' => $assessments->contains(fn ($a) => str_starts_with($a->remarks ?? '', '[DEMO]')),
             'summary_method' => 'KNEC rubric levels: BE=1, AE=2, ME=3, EE=4. Recorded performance levels are based on assessment criteria and descriptors. Subject and strand averages are supplementary summaries of included ratings, not KNEC overall grades or percentages. No overall level is assigned automatically.',
-            'subjects' => $summary->subjects($assessments),
+            'subjects' => $subjects,
+            'trend' => app(\App\Services\ParentReportTrend::class)->build($student, $report, $subjects),
             'assessments' => $assessments->map(fn ($a) => ['learning_area' => $a->subStrand->strand->learningArea->name,
                 'strand' => $a->subStrand->strand->name, 'sub_strand' => $a->subStrand->name,
                 'competency_level' => $a->competency_level, 'remarks' => $a->remarks]),
