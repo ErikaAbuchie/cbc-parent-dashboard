@@ -56,7 +56,8 @@ class ParentPracticeController extends Controller
         $topics = $this->topics($student, $report)->map(fn ($a) => ['id' => $a->sub_strand_id, 'name' => $a->subStrand->name,
             'learning_area' => $a->subStrand->strand->learningArea->name, 'competency_level' => $a->competency_level])->values();
         $history = QuizSession::where('student_id', $student->id)->where('term_report_id', $report->id)
-            ->whereIn('sub_strand_id', $topics->pluck('id'))->whereNotNull('completed_at')->latest('id')->take(5)->get()
+            ->whereIn('sub_strand_id', $topics->pluck('id'))->whereNotNull('question_set')->whereNotNull('completed_at')
+            ->orderByDesc('completed_at')->orderByDesc('id')->take(5)->get()
             ->map(fn ($q) => ['id' => $q->id, 'topic' => SubStrand::findOrFail($q->sub_strand_id)->name,
                 'completed_at' => $q->completed_at->toIso8601String(), 'correct_count' => QuizResponse::where('quiz_session_id', $q->id)->where('is_correct', true)->count(),
                 'total' => count($q->question_set ?? [])]);

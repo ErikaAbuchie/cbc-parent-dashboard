@@ -24,6 +24,17 @@ async function openAttempt(topicId?: number, historyId?: number) {
   } catch (error) { await fail(error) }
   finally { busy.value = false }
 }
+const route = useRoute()
+onMounted(() => {
+  watch(() => route.query.attempt, (value) => {
+    if (value === undefined) return
+    if (typeof value !== 'string' || !/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(Number(value))) {
+      message.value = 'This practice review link is invalid. Choose an attempt below.'
+      return
+    }
+    void openAttempt(undefined, Number(value))
+  }, { immediate: true })
+})
 async function submit() {
   if (!attempt.value || busy.value) return
   busy.value = true; message.value = ''

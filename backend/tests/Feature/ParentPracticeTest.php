@@ -108,4 +108,37 @@ class ParentPracticeTest extends TestCase
         }
         $this->postJson('/api/parent/practice', ['sub_strand_id' => $this->assessment->sub_strand_id], $this->headers)->assertStatus(429);
     }
+    public function test_recent_results_are_ordered_by_completion_limited_and_scoped_without_exposing_answers(): void
+    {
+        $this->freezeTime();
+        $questions = app(\App\Services\PracticeQuestionBank::class)->questions(SubStrand::findOrFail($this->assessment->sub_strand_id));
+        $ids = [];
+        for ($i = 0; $i < 7; $i++) {
+            $quiz = \App\Models\QuizSession::create(['student_id' => $this->assessment->student_id,
+                'term_report_id' => $this->access->term_report_id, 'sub_strand_id' => $this->assessment->sub_strand_id,
+                'question_set' => $questions, 'completed_at' => now()->subMinutes($i)]);
+            $ids[] = $quiz->id;
+            foreach ($questions as $index => $q) {
+                \App\Models\QuizResponse::create(['quiz_session_id' => $quiz->id, 'question_id' => $q['id'],
+                    'question' => $q['question'], 'selected_answer' => 'Stored selection', 'selected_index' => 0, 'is_correct' => $index < 2]);
+            }
+        }
+        $attributes = $quiz->only(['student_id', 'term_report_id', 'sub_strand_id', 'question_set']);
+        // Higher IDs must not bypass completion time ordering or access filters.
+        \App\Models\QuizSession::create($attributes); // Unfinished.
+        \App\Models\QuizSession::create(array_merge($attributes, ['completed_at' => now(), 'question_set' => null]));
+        \App\Models\QuizSession::create(array_merge($attributes, ['completed_at' => now(), 'student_id' => Student::where('id', '!=', $this->assessment->student_id)->firstOrFail()->id]));
+        $otherReport = TermReport::findOrFail($this->access->term_report_id)->replicate();
+        $otherReport->term = 'Term 2 2026'; $otherReport->save();
+        \App\Models\QuizSession::create(array_merge($attributes, ['completed_at' => now(), 'term_report_id' => $otherReport->id]));
+        \App\Models\QuizSession::create(array_merge($attributes, ['completed_at' => now(), 'sub_strand_id' => SubStrand::where('name', 'Addition')->firstOrFail()->id]));
+        $response = $this->getJson('/api/parent/practice', $this->headers)->assertOk()->assertJsonCount(5, 'history')
+            ->assertJsonPath('history.0.correct_count', 2)->assertJsonPath('history.0.total', 3)
+            ->assertJsonMissingPath('history.0.question_set')->assertJsonMissingPath('history.0.correct_answer');
+        $this->assertSame(array_slice($ids, 0, 5), array_column($response->json('history'), 'id'));
+        TermReport::findOrFail($this->access->term_report_id)->update(['sub_strand_ids' => []]);
+        $this->getJson('/api/parent/practice', $this->headers)->assertOk()->assertJsonCount(0, 'history');
+        $this->getJson('/api/parent/practice/'.$ids[0], $this->headers)->assertNotFound();
+    }
+
 }
