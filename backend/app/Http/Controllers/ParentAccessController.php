@@ -76,13 +76,23 @@ class ParentAccessController extends Controller
     public function explanation(Request $request, AIService $ai)
     {
         [$session, $student, $report] = $this->context($request);
+        $data = $request->validate(['mode' => ['sometimes', 'required', 'in:summary,home_tips'],
+            'subject_id' => ['required_if:mode,home_tips', 'integer', 'min:1'],
+            'strand_id' => ['required_if:mode,home_tips', 'integer', 'min:1']]);
+        $mode = $data['mode'] ?? 'summary';
         // Ignore submitted ratings, learner IDs and prompts: use only authorised records.
-        $ratings = Assessment::where('student_id', $student->id)->where('user_id', $report->user_id)
+        $query = Assessment::where('student_id', $student->id)->where('user_id', $report->user_id)
             ->where('term', $report->term)->whereIn('sub_strand_id', $report->sub_strand_ids)
-            ->with('subStrand.strand.learningArea')->orderBy('sub_strand_id')->get()
+            ->with('subStrand.strand.learningArea');
+        if ($mode === 'home_tips') {
+            $query->whereHas('subStrand.strand', fn ($q) => $q->whereKey($data['strand_id'])->where('learning_area_id', $data['subject_id']));
+        }
+        $ratings = $query->orderBy('sub_strand_id')->get()
             ->map(fn ($a) => ['learning_area' => $a->subStrand->strand->learningArea->name,
+                'strand' => $a->subStrand->strand->name,
                 'sub_strand' => $a->subStrand->name, 'competency_level' => $a->competency_level])->all();
-        $cacheKey = 'parent-explanation:v1:'.hash('sha256', json_encode([$report->id, $student->schoolClass->grade_level,
+        abort_if($mode === 'home_tips' && ! $ratings, 404, 'This subject and strand have no assessed results in your report.');
+        $cacheKey = 'parent-explanation:v2:'.hash('sha256', json_encode([$mode, $data['subject_id'] ?? null, $data['strand_id'] ?? null, $report->id, $student->schoolClass->grade_level,
             config('services.ollama'), $ratings], JSON_THROW_ON_ERROR));
         if ($cached = Cache::get($cacheKey)) return response()->json($cached)->header('Cache-Control', 'no-store');
         $limitKey = 'parent-explanation:'.$session->parent_access_id;
@@ -91,7 +101,7 @@ class ParentAccessController extends Controller
         $lock = Cache::lock($cacheKey.':lock', 55);
         abort_unless($lock->get(), 429, 'An explanation is already being prepared. Please try again shortly.');
         try {
-            $result = $ai->explainReport($ratings, (int) $student->schoolClass->grade_level);
+            $result = $ai->explainReport($ratings, (int) $student->schoolClass->grade_level, $mode);
             if ($result['source'] === 'model') Cache::put($cacheKey, $result, 600);
         } finally {
             $lock->release();
