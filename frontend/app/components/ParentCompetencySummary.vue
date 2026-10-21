@@ -1,10 +1,10 @@
 <script setup lang="ts">
 const props = defineProps<{ assessments: { competency_level: string }[] }>()
 const definitions = [
-  { code: 'EE', label: 'Exceeding Expectations', color: '#176349' },
-  { code: 'ME', label: 'Meeting Expectations', color: '#256b98' },
-  { code: 'AE', label: 'Approaching Expectations', color: '#946000' },
-  { code: 'BE', label: 'Below Expectations', color: '#a32121' }
+  { code: 'EE', label: 'Exceeding Expectations' },
+  { code: 'ME', label: 'Meeting Expectations' },
+  { code: 'AE', label: 'Approaching Expectations' },
+  { code: 'BE', label: 'Below Expectations' }
 ]
 const total = computed(() => props.assessments.length)
 const rows = computed(() => definitions.map(level => ({
@@ -22,7 +22,7 @@ const unrecognised = computed(() => total.value - rows.value.reduce((sum, row) =
       <ul class="level-list">
         <li v-for="row in rows" :key="row.code">
           <div class="level-label"><span><strong>{{ row.code }}</strong> — {{ row.label }}</span><span class="count">{{ row.count }} of {{ total }}</span></div>
-          <div class="bar-track" aria-hidden="true"><div class="bar" :style="{ width: `${row.count / total * 100}%`, backgroundColor: row.color }" /></div>
+          <div class="bar-track" aria-hidden="true"><div class="bar" :style="{ width: `${row.count / total * 100}%` }" /></div>
         </li>
       </ul>
       <p v-if="unrecognised" role="status">{{ unrecognised }} results have an unrecognised competency level and are not counted in the four bars.</p>
@@ -39,8 +39,8 @@ h2 { margin-top: 0; }
 li + li { margin-top: 20px; }
 .level-label { display: flex; justify-content: space-between; gap: 12px; line-height: 1.5; }
 .count { white-space: nowrap; font-weight: 600; }
-.bar-track { height: 16px; margin-top: 6px; background: #dce6e2; border-radius: 4px; overflow: hidden; }
-.bar { height: 100%; border-radius: 4px; }
+.bar-track { height: 16px; margin-top: 6px; background: #eaf3ee; border-radius: 4px; overflow: hidden; }
+.bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #12634f 0%, #258c6c 55%, #64c8a0 100%); }
 .scope-note { margin-bottom: 0; font-size: 14px; }
 @media print {
   .competency-summary { break-inside: avoid; background: #fff; border-color: #999; padding: 12px; }
