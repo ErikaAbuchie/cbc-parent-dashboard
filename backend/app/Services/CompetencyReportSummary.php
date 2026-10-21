@@ -11,10 +11,10 @@ class CompetencyReportSummary
         $points = ['BE' => 1, 'AE' => 2, 'ME' => 3, 'EE' => 4];
         $values = $assessments->map(fn ($a) => $points[$a->competency_level] ?? null)->filter(fn ($v) => $v !== null);
         if ($values->isEmpty()) return ['summary_level' => null, 'average_score' => null];
-        // Report a two-decimal mean, then apply the documented project thresholds.
+        // KNEC records rubric levels 1–4 for assessed criteria. A mean is a
+        // supplementary statistic, not authority to assign a new overall level.
         $average = round($values->avg(), 2);
-        $level = match (true) { $average >= 3.5 => 'EE', $average >= 2.5 => 'ME', $average >= 1.5 => 'AE', default => 'BE' };
-        return ['summary_level' => $level, 'average_score' => $average];
+        return ['summary_level' => null, 'average_score' => $average];
     }
 
     public function subjects(Collection $assessments): array

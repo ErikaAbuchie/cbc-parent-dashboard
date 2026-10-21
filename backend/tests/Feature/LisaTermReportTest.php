@@ -22,7 +22,7 @@ class LisaTermReportTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_average_uses_all_sub_strands_and_documented_level_boundaries(): void
+    public function test_average_preserves_rubric_points_without_inventing_an_overall_performance_level(): void
     {
         $service = app(CompetencyReportSummary::class);
         foreach ([['BE', 'BE'], ['AE', 'AE'], ['ME', 'ME'], ['EE', 'EE'], ['EE', 'BE'], ['ME', 'AE'], ['EE', 'ME']] as $codes) {
@@ -30,7 +30,7 @@ class LisaTermReportTest extends TestCase
             $actual = $service->aggregate($rows);
             $expected = array_sum(array_map(fn ($c) => ['BE' => 1, 'AE' => 2, 'ME' => 3, 'EE' => 4][$c], $codes)) / 2;
             $this->assertEquals($expected, $actual['average_score']);
-            $this->assertSame(match (true) { $expected >= 3.5 => 'EE', $expected >= 2.5 => 'ME', $expected >= 1.5 => 'AE', default => 'BE' }, $actual['summary_level']);
+            $this->assertNull($actual['summary_level']);
         }
         $this->assertNull($service->aggregate(collect())['average_score']);
         $this->assertNull($service->aggregate(collect())['summary_level']);
@@ -68,6 +68,8 @@ class LisaTermReportTest extends TestCase
         $maths = collect($response->json('subjects'))->firstWhere('name', 'Mathematics');
         $this->assertCount(4, $maths['strands']);
         $this->assertSame(19, $maths['assessed_count']);
+        $this->assertNull($maths['summary_level']);
+        $this->assertNull($maths['strands'][0]['summary_level']);
         $this->assertEquals(round(Assessment::where('student_id', $lisa->id)->whereHas('subStrand.strand.learningArea', fn ($q) => $q->where('name', 'Mathematics'))
             ->get()->avg(fn ($a) => ['BE' => 1, 'AE' => 2, 'ME' => 3, 'EE' => 4][$a->competency_level]), 2), $maths['average_score']);
         $this->assertSame('BE', $maths['strands'][0]['sub_strands'][0]['competency_level']);
