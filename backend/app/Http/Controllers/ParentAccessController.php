@@ -7,6 +7,8 @@ use App\Models\ParentAccess;
 use App\Models\ParentSession;
 use App\Models\Student;
 use App\Models\TermReport;
+use App\Services\AIService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
@@ -72,6 +74,34 @@ class ParentAccessController extends Controller
                 'strand' => $a->subStrand->strand->name, 'sub_strand' => $a->subStrand->name,
                 'competency_level' => $a->competency_level, 'remarks' => $a->remarks]),
         ])->header('Cache-Control', 'no-store');
+    }
+
+    public function explanation(Request $request, AIService $ai)
+    {
+        [$session, $student, $report] = $this->context($request);
+        // Ignore submitted ratings, learner IDs and prompts: use only authorised records.
+        $ratings = Assessment::where('student_id', $student->id)->where('user_id', $report->user_id)
+            ->where('term', $report->term)->whereIn('sub_strand_id', $report->sub_strand_ids)
+            ->with('subStrand.strand.learningArea')->orderBy('sub_strand_id')->get()
+            ->map(fn ($a) => ['learning_area' => $a->subStrand->strand->learningArea->name,
+                'sub_strand' => $a->subStrand->name, 'competency_level' => $a->competency_level])->all();
+        $cacheKey = 'parent-explanation:v1:'.hash('sha256', json_encode([$report->id, $student->schoolClass->grade_level,
+            config('services.ollama'), $ratings], JSON_THROW_ON_ERROR));
+        if ($cached = Cache::get($cacheKey)) return response()->json($cached)->header('Cache-Control', 'no-store');
+        $limitKey = 'parent-explanation:'.$session->parent_access_id;
+        abort_if(RateLimiter::tooManyAttempts($limitKey, 3), 429, 'Please wait a minute before requesting another explanation.');
+        RateLimiter::hit($limitKey, 60);
+        $lock = Cache::lock($cacheKey.':lock', 55);
+        abort_unless($lock->get(), 429, 'An explanation is already being prepared. Please try again shortly.');
+        try {
+            $result = $ai->explainReport($ratings, (int) $student->schoolClass->grade_level);
+            if ($result['source'] === 'model') Cache::put($cacheKey, $result, 600);
+        } finally {
+            $lock->release();
+        }
+        // Re-check access after inference in case a teacher revoked it while waiting.
+        $this->context($request);
+        return response()->json($result)->header('Cache-Control', 'no-store');
     }
 
     public function logout(Request $request)

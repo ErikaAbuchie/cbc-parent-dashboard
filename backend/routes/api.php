@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->prefix('teacher')->group(function () {
 
 Route::post('/parent/verify', [ParentAccessController::class, 'verify']);
 Route::get('/parent/report', [ParentAccessController::class, 'report']);
+Route::post('/parent/explanation', [ParentAccessController::class, 'explanation']);
 Route::post('/parent/logout', [ParentAccessController::class, 'logout']);
 
 Route::get('/user', function (Request $request) {
