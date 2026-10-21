@@ -1,5 +1,9 @@
 <script setup lang="ts">
-type Explanation = { source: 'model' | 'fallback' | 'empty'; model: string | null; summary: string; activity: string; level_guide: { code: string; count: number; meaning: string }[] }
+type Explanation = { source: 'model' | 'fallback' | 'empty'; fallback_reason?: string; model: string | null; summary: string; activity: string; level_guide: { code: string; count: number; meaning: string }[] }
+function fallbackMessage(value: Explanation) {
+  if (value.source !== 'fallback') return ''
+  return ({ timeout: 'The AI took too long. Please try again shortly.', connection: 'The app could not connect to the AI service.', disabled: 'AI is switched off in the server settings.', provider_error: 'The AI service could not process this request.', incomplete_response: 'The AI response was incomplete. Please try again.' } as Record<string, string>)[value.fallback_reason || ''] || 'The AI did not return a usable explanation. Please try again.'
+}
 type Subject = { id: number; name: string; strands: { id: number; name: string }[] }
 const props = defineProps<{ subjects: Subject[] }>()
 const result = ref<Explanation | null>(null)
@@ -24,7 +28,7 @@ async function explain(mode: 'summary' | 'home_tips') {
   const selectedStrand = strandId.value
   const title = `${props.subjects.find(s => String(s.id) === selectedSubject)?.name} · ${strands.value.find(s => String(s.id) === selectedStrand)?.name}`
   try {
-    const response = await $fetch<Explanation>('/api/parent/explanation', { method: 'POST', timeout: 60000,
+    const response = await $fetch<Explanation>('/api/parent/explanation', { method: 'POST', timeout: 145000,
       body: mode === 'summary' ? { mode } : { mode, subject_id: Number(selectedSubject), strand_id: Number(selectedStrand) } })
     if (cancelled) return
     if (mode === 'summary') result.value = response
@@ -39,7 +43,7 @@ async function explain(mode: 'summary' | 'home_tips') {
 <template>
   <section class="explanation" aria-labelledby="explanation-heading" :aria-busy="!!loading">
     <span class="eyebrow">SUPPORT FOR PARENTS</span><h2 id="explanation-heading">Understand and support your learner</h2>
-    <p class="controls">Choose an explanation or home practice tips. Each request may take up to a minute.</p>
+    <p class="controls">Choose an explanation or home practice tips. Each request may take up to two minutes.</p>
     <div class="ai-grid">
       <section class="ai-card" aria-labelledby="summary-heading"><h3 id="summary-heading">1. Explain the grades simply</h3><p>What do EE, ME, AE and BE mean? What do these results say about the skills assessed?</p>
         <button class="controls" type="button" :disabled="!!loading" @click="explain('summary')">{{ loading === 'summary' ? 'Explaining…' : 'Explain these results' }}</button>
@@ -52,6 +56,8 @@ async function explain(mode: 'summary' | 'home_tips') {
         <div v-if="tips" aria-live="polite"><h4>{{ tipTitle }}</h4><p class="source">{{ tips.source === 'model' ? 'AI-generated home tips' : 'General practice guidance · AI unavailable' }}</p><p class="generated-text">{{ tips.summary }}</p><h4>Try this together</h4><p class="generated-text">{{ tips.activity }}</p></div>
       </section>
     </div>
+    <p v-if="result && fallbackMessage(result)" role="status">Summary: {{ fallbackMessage(result) }} Standard guidance is shown above.</p>
+    <p v-if="tips && fallbackMessage(tips)" role="status">Home tips: {{ fallbackMessage(tips) }} Standard guidance is shown above.</p>
     <p v-if="loading" class="controls" role="status">Preparing guidance. You can still read the report below.</p><p v-if="message" class="error controls" role="alert">{{ message }}</p>
     <p class="note">AI suggestions may be inaccurate and cannot guarantee a higher grade. The teacher’s ratings and remarks remain the source of truth. Ask the teacher if guidance does not match the results.</p>
   </section>

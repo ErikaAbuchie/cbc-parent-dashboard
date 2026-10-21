@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   try {
     return await $fetch(`${useRuntimeConfig(event).apiBase}/parent/explanation`, {
       method: 'POST', body: { mode: body.mode ?? 'summary', subject_id: body.subject_id, strand_id: body.strand_id },
-      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` }, timeout: 55000
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` }, timeout: 135000
     })
   } catch (error: any) {
     const status = error.response?.status
