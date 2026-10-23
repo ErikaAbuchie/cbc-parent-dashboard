@@ -4,7 +4,7 @@ defineProps<{ learnerName: string }>()
 
 <template>
   <section class="parent-welcome" aria-labelledby="parent-welcome-heading">
-    <HubLandscape class="welcome-landscape" />
+    <img class="welcome-brain" src="/images/welcome-brain.png" alt="" width="4000" height="4000" aria-hidden="true" />
     <div class="welcome-copy">
       <span class="eyebrow">GROWING TOGETHER, ONE STEP AT A TIME</span>
       <h2 id="parent-welcome-heading">Welcome back.</h2>
@@ -16,9 +16,9 @@ defineProps<{ learnerName: string }>()
 
 <style scoped>
 .parent-welcome { position: relative; isolation: isolate; overflow: hidden; min-height: 270px; margin-bottom: 22px; border: 1px solid #d9e9df; border-radius: 20px; background: linear-gradient(110deg,#edf8ee,#e0f2ed); }
-.welcome-landscape { position: absolute; z-index: -2; right: 0; bottom: 0; width: 76%; height: 100%; opacity: .85; animation: landscape-settle 4.5s ease-out both; }
+.welcome-brain { position: absolute; z-index: 0; right: 14px; top: 0; width: 36%; height: 100%; object-fit: contain; pointer-events: none; animation: brain-arrive 1.2s ease-out both; }
 .parent-welcome::after { content: ''; position: absolute; z-index: -1; inset: 0; pointer-events: none; background: linear-gradient(90deg,#edf8eef7,#edf8eed9 36%,#edf8ee20 75%); }
-.welcome-copy { position: relative; padding: 32px; max-width: 640px; animation: welcome-arrive .8s ease-out both; }
+.welcome-copy { position: relative; z-index: 1; padding: 32px; max-width: 640px; animation: welcome-arrive .8s ease-out both; }
 .eyebrow { display: block; font-size: 11px; letter-spacing: 1.6px; line-height: 1.7; }
 .welcome-copy h2 { margin: 17px 0; font-size: clamp(29px,3.4vw,42px); line-height: 1.15; letter-spacing: -1px; color: #123c37; }
 .welcome-copy p { max-width: 440px; color: #567b6c; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }.welcome-copy strong { color: #315d4c; font-weight: 600; }
@@ -32,4 +32,6 @@ defineProps<{ learnerName: string }>()
 @media(max-width:600px) { .parent-welcome { min-height: 280px; border-radius: 16px; }.welcome-copy { padding: 26px 20px; }.eyebrow { font-size: 9px; letter-spacing: 1.1px; }.welcome-copy h2 { font-size: 31px; }.welcome-copy p { max-width: 300px; font-size: 13px; }.welcome-landscape { width: 100%; opacity: .5; }.parent-welcome::after { background: linear-gradient(90deg,#edf8eef5,#edf8eec9 55%,#edf8ee55); } }
 @media(prefers-reduced-motion:reduce) { .welcome-copy,.welcome-landscape,.welcome-landscape :deep(circle),.welcome-landscape :deep(ellipse) { animation: none; }.welcome-link svg { transition: none; }.welcome-link:hover svg { transform: none; } }
 @media print { .parent-welcome { display: none; } }
+@keyframes brain-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .welcome-brain { animation: none; } }
 </style>

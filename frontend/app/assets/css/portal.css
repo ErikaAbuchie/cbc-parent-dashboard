@@ -41,6 +41,7 @@
   :root body .workspace :is(.welcome-copy h1, .welcome-copy h2, .welcome-copy p, .welcome-copy strong, .welcome-copy .eyebrow, .hero-link, .welcome-link) { color: #fff; }
   :root body .workspace .welcome-copy { padding: 30px; max-width: 650px; }
   :root body .workspace .welcome-copy p { color: #f4eafb; }
+  :root body .workspace .parent-welcome .welcome-copy { max-width: 64%; }
   :root body .workspace :is(.hub-landscape, .welcome-landscape) { filter: hue-rotate(125deg) saturate(.7); }
   :root body .workspace .dashboard-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 24px 0; }
   :root body .workspace .metric-card { border: 1px solid #eee7f5; border-radius: 20px; padding: 22px 18px; align-items: flex-start; box-shadow: 0 7px 24px #4d296508; flex-wrap: wrap; min-width: 0; }
@@ -103,6 +104,8 @@
     .skip-link { left: 12px; }
   }
   @media (max-width: 600px) {
+    :root body .workspace .parent-welcome .welcome-copy { max-width: none; padding-bottom: 170px; }
+    :root body .workspace .parent-welcome .welcome-brain { width: 180px; height: 180px; top: auto; bottom: -8px; right: 12px; }
     .workspace-header { padding: 0 14px; gap: 10px; }.header-badge { display: none; }.header-emblem { display: none; }
     .workspace-content { padding: 14px 12px; }.workspace-content > main { padding: 22px 16px; border-radius: 18px; }
     .workspace-content > .teacher-home { padding: 0; }
