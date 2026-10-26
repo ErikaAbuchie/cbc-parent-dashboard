@@ -42,8 +42,20 @@
   :root body .workspace .welcome-copy { padding: 30px; max-width: 650px; }
   :root body .workspace .welcome-copy p { color: #f4eafb; }
   :root body .workspace .parent-welcome .welcome-copy { max-width: 64%; }
-  :root body .workspace .teacher-home .welcome-copy { max-width: 64%; z-index: 2; }
-  :root body .workspace .welcome-book { position: absolute; z-index: 1; right: 16px; top: 16px; width: 31%; height: calc(100% - 32px); object-fit: contain; pointer-events: none; }
+  :root body .workspace .teacher-home .welcome-copy { max-width: 64%; z-index: 2; animation: teacher-welcome-arrive .8s ease-out both; }
+  :root body .workspace .teacher-home .welcome-copy .eyebrow { display: block; font-size: 11px; letter-spacing: 1.6px; line-height: 1.7; }
+  :root body .workspace .teacher-home .welcome-copy h1 { margin: 17px 0; font-size: clamp(29px, 3.4vw, 42px); line-height: 1.15; letter-spacing: -1px; overflow-wrap: anywhere; }
+  :root body .workspace .teacher-home .welcome-copy p { max-width: 440px; font-size: 14px; line-height: 1.8; }
+  :root body .workspace .teacher-home .hero-link { margin-top: 10px; font-weight: 700; }
+  :root body .workspace .teacher-home .hero-link svg { transition: transform .25s ease; }
+  :root body .workspace .teacher-home .hero-link:hover svg { transform: translateX(3px); }
+  :root body .workspace .welcome-book { position: absolute; z-index: 1; right: 14px; top: 0; width: 36%; height: 100%; object-fit: contain; pointer-events: none; animation: teacher-welcome-arrive 1.2s ease-out both; }
+  @keyframes teacher-welcome-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) {
+    :root body .workspace .teacher-home :is(.welcome-copy, .welcome-book) { animation: none; }
+    :root body .workspace .teacher-home .hero-link svg { transition: none; }
+    :root body .workspace .teacher-home .hero-link:hover svg { transform: none; }
+  }
   :root body .workspace :is(.hub-landscape, .welcome-landscape) { filter: hue-rotate(125deg) saturate(.7); }
   :root body .workspace .dashboard-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 24px 0; }
   :root body .workspace .metric-card { border: 1px solid #eee7f5; border-radius: 20px; padding: 22px 18px; align-items: flex-start; box-shadow: 0 7px 24px #4d296508; flex-wrap: wrap; min-width: 0; }
@@ -106,8 +118,11 @@
     .skip-link { left: 12px; }
   }
   @media (max-width: 600px) {
-    :root body .workspace .teacher-home .welcome-copy { max-width: none; padding-bottom: 210px; }
-    :root body .workspace .welcome-book { top: auto; bottom: 16px; right: 20px; width: 170px; height: 180px; }
+    :root body .workspace .teacher-home .welcome-copy { max-width: none; padding-bottom: 170px; }
+    :root body .workspace .teacher-home .welcome-copy h1 { font-size: 31px; }
+    :root body .workspace .teacher-home .welcome-copy .eyebrow { font-size: 9px; letter-spacing: 1.1px; }
+    :root body .workspace .teacher-home .welcome-copy p { max-width: 300px; font-size: 13px; }
+    :root body .workspace .welcome-book { top: auto; bottom: -8px; right: 12px; width: 180px; height: 180px; }
     :root body .workspace .parent-welcome .welcome-copy { max-width: none; padding-bottom: 170px; }
     :root body .workspace .parent-welcome .welcome-brain { width: 180px; height: 180px; top: auto; bottom: -8px; right: 12px; }
     .workspace-header { padding: 0 14px; gap: 10px; }.header-badge { display: none; }.header-emblem { display: none; }
@@ -130,4 +145,16 @@
     input, select, textarea { font-size: 16px; }
     .workspace-footer { padding: 12px 18px; }
   }
+}
+
+/* Printing uses its own media rules; the screen palette above does not apply. */
+@media print {
+  :root { --ink: #2d2340; --muted: #756b83; --green: #7540b5; --green-dark: #4d287c; --line: #e9e1f2; --mint: #f4eefc; }
+  :root body .parent-report :is(.eyebrow, a, .subject-label, .term-badge, .source, .count, .strand-summary, .trend-values span) { color: #70429b; }
+  :root body .parent-report :is(p, small, .summary-method, .admission-label, .chart-note) { color: #65596e; }
+  :root body .parent-report :is(.competency-summary, .rubric-guide, .explanation, .support-subjects, .chart-card, .ai-card, .practice-results, .subject-panel, .strand-panel, .sub-list article, .subject-guidance, .chart-data li) { border-color: #dfd1eb; background: white; box-shadow: none; }
+  :root body .parent-report :is(.trend-values > div, .grade, .strand-grade, .term-badge) { background: #f3ecfa; color: #70429b; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  :root body .parent-report .bar-track { background: #eee5f6; }
+  :root body .parent-report .bar { background: linear-gradient(90deg, #7840ad, #a36add 55%, #c99af0); }
+  :root body .parent-report :is(.bar-track, .bar) { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
