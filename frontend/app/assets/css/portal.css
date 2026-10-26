@@ -147,6 +147,33 @@
   }
 }
 
+/* Parent reports prioritise comfortable reading over dense data presentation. */
+@media screen {
+  :root body .workspace .parent-report { font-size: 1.125rem; line-height: 1.7; }
+  :root body .workspace .parent-report :is(p, li, label, input, select, textarea, .level-label, .strand-name strong, .sub-list h4, .subject-guidance h5) { font-size: 1.125rem; line-height: 1.7; }
+  :root body .workspace .parent-report :is(small, .summary-method, .scope-note, .demo-note, .source, .note, .count, .term-badge, .admission-label, .sub-level, .strand-grade small, .grade small, .trend-values span, .trend-values small, .print-help, .close-report-row) { font-size: 1rem; line-height: 1.65; }
+  /* The component's original chart note uses !important at 12px. */
+  :root body .workspace .parent-report .chart-note { font-size: 1rem !important; line-height: 1.75; }
+  :root body .workspace .parent-report :is(.chart-card p, .summary-method, .sub-list p, .trend-values span, .trend-values small, .note, .scope-note, small) { color: #60516e; }
+  :root body .workspace .parent-report :is(h2, .chart-card h2) { font-size: 1.5rem; line-height: 1.35; }
+  :root body .workspace .parent-report h3 { font-size: 1.25rem; }
+  :root body .workspace .parent-report :is(button, .practice-link, .chart-data summary, .rubric-guide summary, .details-toggle) { font-size: 1.0625rem; line-height: 1.5; min-height: 48px; }
+  :root body .workspace .parent-report .chart-data li { font-size: 1rem; flex-wrap: wrap; padding: 12px 0; }
+  :root body .workspace .parent-report .trend-values { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  :root body .workspace .parent-report .trend-values > div { padding: 16px; min-width: 0; }
+  :root body .workspace .parent-report .trend-values strong { font-size: 1.25rem; }
+  :root body .workspace .parent-report :is(.subject-name strong, .grade > strong) { font-size: 1.25rem; }
+  :root body .workspace .parent-report :is(.grade, .strand-grade) { font-size: 1.0625rem; }
+  :root body .workspace .parent-report :is(.subject-panel > summary, .strand-panel > summary) { flex-wrap: wrap; row-gap: 14px; }
+  :root body .workspace .parent-report .chart-canvas { height: 360px; }
+  @media (max-width: 600px) {
+    :root body .workspace .parent-report .welcome-copy p { font-size: 1.125rem; }
+    :root body .workspace .parent-report .strand-name { flex-basis: calc(100% - 40px); }
+    :root body .workspace .parent-report .strand-grade { margin-left: 24px; }
+    :root body .workspace .parent-report .chart-canvas { height: 340px; }
+  }
+}
+
 /* Printing uses its own media rules; the screen palette above does not apply. */
 @media print {
   :root { --ink: #2d2340; --muted: #756b83; --green: #7540b5; --green-dark: #4d287c; --line: #e9e1f2; --mint: #f4eefc; }
