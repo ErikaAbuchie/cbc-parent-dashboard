@@ -7,7 +7,7 @@ const props = defineProps<{ kind: 'radar' | 'line'; labels: string[]; values: (n
 const radarData = computed<ChartData<'radar'>>(() => ({ labels: props.labels.filter((_, i) => props.values[i] !== null), datasets: [{ label: props.title, data: props.values.filter((v): v is number => v !== null),
   borderColor: '#9155c9', backgroundColor: 'rgba(145, 85, 201, .16)', pointBackgroundColor: '#9155c9', pointRadius: 4, borderWidth: 2 }] }))
 const lineData = computed<ChartData<'line'>>(() => ({ labels: props.labels, datasets: [{ label: props.title, data: props.values,
-  borderColor: '#356ba8', backgroundColor: 'rgba(53, 107, 168, .10)', pointBackgroundColor: '#356ba8', pointRadius: 5,
+  borderColor: '#9155c9', backgroundColor: 'rgba(145, 85, 201, .10)', pointBackgroundColor: '#9155c9', pointRadius: 5,
   pointHoverRadius: 7, borderWidth: 2.5, tension: 0, spanGaps: false, fill: false }] }))
 const radarOptions: ChartOptions<'radar'> = { responsive: true, maintainAspectRatio: false, animation: false,
   plugins: { legend: { display: false }, tooltip: { titleFont: { size: 15 }, bodyFont: { size: 14 }, callbacks: { label: context => `${context.dataset.label}: ${Number(context.raw).toFixed(2)} / 4` } } },

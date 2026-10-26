@@ -174,32 +174,6 @@
   }
 }
 
-/* Purple remains the primary identity; blue and plum distinguish supporting content. */
-@media screen {
-  :root { --accent-blue: #356ba8; --accent-blue-soft: #edf4fc; --accent-plum: #9249a8; }
-  body { background-color: #f2f3fb; background-image: radial-gradient(ellipse at 10% 0%, #e9dcf8, transparent 65%); }
-  .public-shell { background: radial-gradient(ellipse at 10% 10%, #e9dcf8, transparent 55%), #f3f6fc; }
-  .header-emblem { color: var(--accent-blue); background: #e7f0fb; }
-  .header-emblem svg { color: var(--accent-blue); }
-  :root body .workspace .metric-icon.gold { color: var(--accent-plum); background: #f7eafa; }
-  :root body .workspace .metric-icon.blue { color: var(--accent-blue); background: #e7f0fb; }
-  :root body .workspace .metric-card:nth-child(2) { border-color: #d5bee9; }
-  :root body .workspace .metric-card:nth-child(3) { background: #f7faff; border-color: #d6e4f5; }
-  :root body .workspace :is(.workflow-note, .class-initial) { background: var(--accent-blue-soft); color: #355c87; }
-  :root body .workspace .dashboard-card:nth-child(2) { border-color: #dce7f5; }
-  :root body .workspace .class-list svg { color: var(--accent-blue); }
-  :root body .workspace .parent-report .chart-card:nth-child(2) { border-color: #d6e4f5; }
-  :root body .workspace .parent-report .chart-card:nth-child(2) > .eyebrow { color: var(--accent-blue); }
-  :root body .workspace .parent-report .trend-values > div { background: var(--accent-blue-soft); }
-  :root body .workspace .parent-report .trend-values :is(strong, span) { color: #355c87; }
-  :root body .workspace .parent-report .ai-card:nth-child(2) { border-color: #d6e4f5; background: #fbfdff; }
-  :root body .workspace .parent-report .ai-card:nth-child(2) h3 { color: #355c87; }
-  :root body .workspace .parent-report .rubric-guide { background: #f6f9fe; border-color: #dce7f5; }
-  :root body .workspace .parent-report .learner-emblem { color: var(--accent-blue); background: #e3edfb; }
-  .public-shell .portal-icon.gold { color: var(--accent-blue); background: #e7f0fb; }
-  .public-shell .portal-choices a:nth-child(2):hover { background: #f4f8fe; border-color: #92b4dc; }
-}
-
 /* Printing uses its own media rules; the screen palette above does not apply. */
 @media print {
   :root { --ink: #2d2340; --muted: #756b83; --green: #7540b5; --green-dark: #4d287c; --line: #e9e1f2; --mint: #f4eefc; }
@@ -210,6 +184,4 @@
   :root body .parent-report .bar-track { background: #eee5f6; }
   :root body .parent-report .bar { background: linear-gradient(90deg, #7840ad, #a36add 55%, #c99af0); }
   :root body .parent-report :is(.bar-track, .bar) { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-  :root body .parent-report .trend-values > div { background: #edf4fc; }
-  :root body .parent-report .trend-values :is(strong, span) { color: #355c87; }
 }
