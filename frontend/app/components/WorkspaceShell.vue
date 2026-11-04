@@ -5,7 +5,8 @@ const menuButton = ref<HTMLButtonElement | null>(null)
 const drawer = ref<HTMLElement | null>(null)
 const teacher = computed(() => route.path.startsWith('/teacher/'))
 const { scale: textScale } = usePortalTextSize()
-useHead({ htmlAttrs: { style: computed(() => `--portal-font-scale: ${textScale.value}`) } })
+const { theme } = usePortalAppearance()
+useHead({ htmlAttrs: { style: computed(() => `--portal-font-scale: ${textScale.value}`), 'data-portal-theme': theme } })
 const links = computed(() => teacher.value ? [
   { to: '/teacher/dashboard', label: 'Dashboard', icon: 'home' },
   { to: '/teacher/students', label: 'Learners', icon: 'learners' },
@@ -68,11 +69,12 @@ function trapKeys(event: KeyboardEvent) {
       <NuxtLink class="brand-link" :to="teacher ? '/teacher/dashboard' : '/parent/report'"><HubBrand /></NuxtLink>
       <p class="nav-caption">{{ teacher ? 'TEACHER WORKSPACE' : 'PARENT WORKSPACE' }}</p>
       <nav aria-label="Main navigation"><NuxtLink v-for="link in links" :key="link.to" :to="link.to" :class="{ active: isActive(link.to) }" :aria-current="isActive(link.to) ? 'page' : undefined"><HubIcon :name="link.icon" />{{ link.label }}<span v-if="isActive(link.to)" class="active-dot" /></NuxtLink></nav>
+      <button type="button" class="sidebar-theme-toggle" role="switch" :aria-checked="theme === 'dark'" @click="theme = theme === 'dark' ? 'light' : 'dark'"><HubIcon name="moon" /><span>Dark mode</span><strong>{{ theme === 'dark' ? 'On' : 'Off' }}</strong></button>
       <div class="sidebar-note"><HubIcon name="leaf" /><strong>Small steps.<br>Growing possibilities.</strong><p>Supporting every learner, together.</p></div>
       <div class="workspace-role"><span class="role-avatar"><HubIcon :name="teacher ? 'assessment' : 'learners'" /></span><span><strong>{{ teacher ? 'Teacher portal' : 'Parent portal' }}</strong><small>CBC Parent Insight</small></span></div>
     </aside>
     <div class="workspace-body" :inert="mobileOpen">
-      <header class="workspace-header"><button ref="menuButton" class="icon-button menu-toggle" aria-label="Open navigation" :aria-expanded="mobileOpen" aria-controls="workspace-nav" @click="mobileOpen = true"><HubIcon name="menu" /></button><div class="header-label"><span>{{ teacher ? 'Teacher workspace' : 'Family workspace' }}</span><strong>{{ title }}</strong></div><NuxtLink class="icon-button reading-settings-link" :to="teacher ? '/teacher/settings' : '/parent/settings'" aria-label="Reading settings"><HubIcon name="settings" /></NuxtLink><span class="header-badge"><span />{{ teacher ? 'Learning, connected' : 'Every step matters' }}</span><span class="header-emblem"><HubIcon name="leaf" /></span></header>
+      <header class="workspace-header"><button ref="menuButton" class="icon-button menu-toggle" aria-label="Open navigation" :aria-expanded="mobileOpen" aria-controls="workspace-nav" @click="mobileOpen = true"><HubIcon name="menu" /></button><div class="header-label"><span>{{ teacher ? 'Teacher workspace' : 'Family workspace' }}</span><strong>{{ title }}</strong></div><span class="header-badge"><span />{{ teacher ? 'Learning, connected' : 'Every step matters' }}</span><span class="header-emblem"><HubIcon name="leaf" /></span></header>
       <div id="workspace-content" class="workspace-content" tabindex="-1"><slot /></div>
       <footer class="workspace-footer">CBC Parent Insight <span>Supporting learning. Strengthening connection.</span></footer>
     </div>

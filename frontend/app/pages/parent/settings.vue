@@ -1,5 +1,5 @@
 <script setup lang="ts">
-useHead({ title: 'Reading settings | Parent portal' })
+useHead({ title: 'Display settings | Parent portal' })
 const { data: report, error, refresh } = await useFetch('/api/parent/report')
 if (error.value?.statusCode === 401) await navigateTo('/parent/login', { replace: true })
 </script>

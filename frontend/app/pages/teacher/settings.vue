@@ -1,5 +1,5 @@
 <script setup lang="ts">
-useHead({ title: 'Reading settings | Teacher portal' })
+useHead({ title: 'Display settings | Teacher portal' })
 const { data: teacher, error, refresh } = await useFetch('/api/auth/session')
 if (error.value?.statusCode === 401) await navigateTo('/teacher/login', { replace: true })
 </script>
