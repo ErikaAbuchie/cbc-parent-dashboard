@@ -1,74 +1,97 @@
 <script setup lang="ts">
 type Topic = { id: number; name: string; learning_area: string; competency_level: string }
 type History = { id: number; topic: string; completed_at: string; correct_count: number; total: number }
-type Attempt = { id: number; sub_strand: string; completed: boolean; questions: { id: number; question: string; options: string[] }[];
-  correct_count?: number; total?: number; review?: { question: string; selected_answer: string; correct_answer: string; is_correct: boolean; feedback: string }[] }
-useHead({ title: 'Learner practice | CBC Parent Insight' })
+type Answer = { question_id: number; selected_index: number; is_correct: boolean; correct_answer: string; feedback: string }
+type Attempt = { id: number; sub_strand_id: number; sub_strand: string; completed: boolean; questions: { id: number; question: string; options: string[] }[]; answered: Answer[]; review?: { question: string; selected_answer: string; correct_answer: string; is_correct: boolean; feedback: string }[] }
+useHead({ title: 'Quiz studio | CBC Parent Insight' })
 const { data, error, refresh } = await useFetch<{ topics: Topic[]; history: History[] }>('/api/parent/practice')
 if (error.value?.statusCode === 401) await navigateTo('/parent/login', { replace: true })
 const attempt = ref<Attempt | null>(null)
-const answers = ref<Record<number, number>>({})
+const currentIndex = ref(0)
+const selection = ref<number | null>(null)
+const showResults = ref(false)
 const busy = ref(false)
 const message = ref('')
 const panel = ref<HTMLElement | null>(null)
+const current = computed(() => attempt.value?.questions[currentIndex.value])
+const feedback = computed(() => attempt.value?.answered.find(a => a.question_id === current.value?.id))
+const correct = computed(() => attempt.value?.answered.filter(a => a.is_correct).length || 0)
+const accuracy = computed(() => Math.round(correct.value / (attempt.value?.questions.length || 1) * 100))
+const streak = computed(() => {
+  let count = 0
+  for (const q of [...(attempt.value?.questions || [])].reverse()) {
+    const a = attempt.value?.answered.find(a => a.question_id === q.id)
+    if (!a) continue
+    if (!a.is_correct) break
+    count++
+  }
+  return count
+})
+async function focusPanel() { await nextTick(); panel.value?.focus() }
 async function fail(error: any) {
   if (error.statusCode === 401 || error.response?.status === 401) { await navigateTo('/parent/login', { replace: true }); return }
   message.value = error.data?.statusMessage || 'Practice is unavailable. Please try again.'
 }
 async function openAttempt(topicId?: number, historyId?: number) {
+  if (busy.value) return
   busy.value = true; message.value = ''
   try {
-    attempt.value = historyId ? await $fetch<Attempt>(`/api/parent/practice/${historyId}`)
-      : await $fetch<Attempt>('/api/parent/practice', { method: 'POST', body: { sub_strand_id: topicId } })
-    answers.value = {}; await nextTick(); panel.value?.focus()
-  } catch (error) { await fail(error) }
-  finally { busy.value = false }
+    const result = historyId ? await $fetch<Attempt>(`/api/parent/practice/${historyId}`) : await $fetch<Attempt>('/api/parent/practice', { method: 'POST', body: { sub_strand_id: topicId } })
+    attempt.value = result; showResults.value = result.completed; selection.value = null
+    const next = result.questions.findIndex(q => !result.answered.some(a => a.question_id === q.id))
+    currentIndex.value = next < 0 ? 0 : next
+    await focusPanel()
+  } catch (error) { await fail(error) } finally { busy.value = false }
 }
 const route = useRoute()
 onMounted(() => {
-  watch(() => route.query.attempt, (value) => {
+  watch(() => route.query.attempt, value => {
     if (value === undefined) return
-    if (typeof value !== 'string' || !/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(Number(value))) {
-      message.value = 'This practice review link is invalid. Choose an attempt below.'
-      return
-    }
+    if (typeof value !== 'string' || !/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(Number(value))) { message.value = 'This practice review link is invalid. Choose an attempt below.'; return }
     void openAttempt(undefined, Number(value))
   }, { immediate: true })
 })
-async function submit() {
-  if (!attempt.value || busy.value) return
+async function checkAnswer() {
+  if (!attempt.value || !current.value || selection.value === null || busy.value || feedback.value) return
   busy.value = true; message.value = ''
   try {
-    attempt.value = await $fetch<Attempt>(`/api/parent/practice/${attempt.value.id}/submit`, { method: 'POST',
-      body: { answers: attempt.value.questions.map(q => ({ question_id: q.id, answer_index: answers.value[q.id] })) } })
-    await refresh(); await nextTick(); panel.value?.focus()
-  } catch (error) { await fail(error) }
-  finally { busy.value = false }
+    attempt.value = await $fetch<Attempt>(`/api/parent/practice/${attempt.value.id}/answer`, { method: 'POST', body: { question_id: current.value.id, answer_index: selection.value } })
+    if (attempt.value.completed) await refresh()
+    await focusPanel()
+  } catch (error) { await fail(error) } finally { busy.value = false }
 }
+async function nextQuestion() {
+  if (!feedback.value || busy.value) return
+  if (attempt.value?.completed) showResults.value = true
+  else currentIndex.value++
+  selection.value = null; await focusPanel()
+}
+function backToTopics() { attempt.value = null; selection.value = null; message.value = '' }
 </script>
-
 <template>
-  <main class="practice-page"><NuxtLink to="/parent/report">← Back to report</NuxtLink><h1>Learner practice</h1>
-    <p>Work through a short quiz together. Practice results do not change the teacher's competency ratings.</p>
-    <p>This pilot has three authored questions each for Grade 5 Mathematics Whole Numbers and Addition. Available topics must already be included in your report.</p>
+  <main class="practice-page"><NuxtLink to="/parent/report" class="back-link">← Back to report</NuxtLink>
+    <header class="studio-header"><span class="eyebrow">LEARN · PLAY · GROW</span><h1>Quiz studio</h1><p>A little practice. A new discovery.</p></header>
+    <p class="muted">Self-paced practice with instant explanations. Scores do not change teacher competency ratings.</p>
     <p v-if="error" class="error" role="alert">{{ error.data?.statusMessage || 'Cannot load practice.' }} <button @click="refresh()">Retry</button></p>
-    <p v-if="message" class="error" role="alert">{{ message }}</p><p v-if="busy" role="status">Working…</p>
-    <template v-if="data && !attempt"><h2>Choose a topic</h2><p v-if="!data.topics.length">No practice quiz is available for the topics in this report yet.</p>
-      <div v-for="topic in data.topics" :key="topic.id"><h3>{{ topic.learning_area }} · {{ topic.name }}</h3><p>Recorded competency: {{ topic.competency_level }}</p><button :disabled="busy" @click="openAttempt(topic.id)">Start or resume practice</button></div>
-      <h2>Recent completed attempts</h2><p v-if="!data.history.length">No completed practice attempts yet.</p><div v-for="item in data.history" :key="item.id"><p>{{ item.topic }} · {{ item.correct_count }} of {{ item.total }} correct · {{ new Date(item.completed_at).toLocaleString() }}</p><button :disabled="busy" @click="openAttempt(undefined, item.id)">Review answers</button></div>
+    <p v-if="message" class="error" role="alert">{{ message }}</p><p v-if="busy" role="status">Saving or loading your quiz…</p>
+    <template v-if="data && !attempt"><h2>Pick your next challenge</h2><p class="muted">Grade 5 Mathematics pilot · 3 authored questions per topic · No timer</p>
+      <p v-if="!data.topics.length">No practice quiz is available for the topics in this report yet.</p>
+      <div class="topic-grid"><article v-for="(topic,index) in data.topics" :key="topic.id" class="topic-card"><span class="topic-symbol" aria-hidden="true">{{ index % 2 ? '+' : '123' }}</span><p class="eyebrow">{{ topic.learning_area }}</p><h3>{{ topic.name }}</h3><p>3 questions · Multiple choice</p><button :disabled="busy" @click="openAttempt(topic.id)">Play or resume →</button></article></div>
+      <section class="history"><h2>Your recent rounds</h2><p v-if="!data.history.length">Your completed quizzes will appear here.</p><article v-for="item in data.history" :key="item.id"><div><h3>{{ item.topic }}</h3><p>{{ item.correct_count }} / {{ item.total }} correct · {{ new Date(item.completed_at).toLocaleString() }}</p></div><button class="secondary" :disabled="busy" @click="openAttempt(undefined,item.id)">Review</button></article></section>
     </template>
-    <section v-if="attempt" ref="panel" tabindex="-1" aria-labelledby="practice-heading"><h2 id="practice-heading">{{ attempt.sub_strand }}</h2>
-      <template v-if="attempt.completed"><h3>Practice complete: {{ attempt.correct_count }} of {{ attempt.total }} correct</h3><p>This is practice feedback, not a new CBC competency rating.</p>
-        <article v-for="(item, index) in attempt.review" :key="index"><h3>{{ index + 1 }}. {{ item.question }}</h3><p><strong>{{ item.is_correct ? 'Correct' : 'Keep practising' }}</strong></p><p>Your answer: {{ item.selected_answer }}</p><p>Correct answer: {{ item.correct_answer }}</p><p>{{ item.feedback }}</p></article>
+    <section v-if="attempt" ref="panel" class="quiz-panel" tabindex="-1" aria-labelledby="practice-heading" :aria-busy="busy">
+      <div class="quiz-top"><span class="eyebrow">{{ showResults ? 'ROUND COMPLETE' : 'YOUR PRACTICE ROUND' }}</span><button class="secondary" :disabled="busy" @click="backToTopics">Back to topics</button></div><h2 id="practice-heading">{{ attempt.sub_strand }}</h2>
+      <template v-if="showResults"><div class="results-hero"><span class="result-symbol" aria-hidden="true">✦</span><h3>{{ accuracy === 100 ? 'Brilliant round!' : 'Every question helps you grow!' }}</h3><strong class="big-score">{{ correct }} / {{ attempt.questions.length }}</strong><p>{{ accuracy }}% accuracy · {{ correct * 100 }} practice points</p><p>These points are for this practice round only.</p></div>
+        <div class="result-actions"><button :disabled="busy" @click="openAttempt(attempt.sub_strand_id)">Play again</button><button class="secondary" :disabled="busy" @click="backToTopics">Choose another topic</button></div><h3>Review your answers</h3>
+        <article v-for="(item,index) in attempt.review" :key="index" class="review-item"><span :class="['answer-tag',{ incorrect: !item.is_correct }]">{{ item.is_correct ? 'Correct' : 'Keep practising' }}</span><h3>{{ index+1 }}. {{ item.question }}</h3><p>Your answer: {{ item.selected_answer }}</p><p>Correct answer: <strong>{{ item.correct_answer }}</strong></p><p>{{ item.feedback }}</p></article>
       </template>
-      <form v-else @submit.prevent="submit"><fieldset v-for="(q, index) in attempt.questions" :key="q.id" :disabled="busy"><legend>{{ index + 1 }}. {{ q.question }}</legend>
-        <label v-for="(option, choice) in q.options" :key="choice"><input v-model="answers[q.id]" type="radio" :name="`question-${q.id}`" :value="choice" required>{{ option }}</label>
-      </fieldset><button :disabled="busy">{{ busy ? 'Saving…' : 'Submit answers' }}</button></form>
-      <button :disabled="busy" @click="attempt = null; answers = {}">Back to topics</button><p v-if="!attempt.completed">Your attempt can be resumed, but unsent answer selections are not saved.</p>
+      <template v-else-if="current"><div class="score-strip"><span>Question {{ currentIndex+1 }} / {{ attempt.questions.length }}</span><span>{{ correct * 100 }} points</span><span>{{ streak }} answer streak</span></div><progress :value="attempt.answered.length" :max="attempt.questions.length" aria-label="Questions answered" />
+        <form @submit.prevent="checkAnswer"><fieldset :disabled="busy || !!feedback"><legend>{{ current.question }}</legend><div class="answer-grid"><label v-for="(option,choice) in current.options" :key="`${current.id}-${choice}`" :class="['answer-option',`option-${choice}`,{chosen: selection === choice || feedback?.selected_index === choice}]"><input v-model="selection" type="radio" :name="`question-${current.id}`" :value="choice" required><span class="choice-letter">{{ ['A','B','C','D'][choice] }}</span><span>{{ option }}</span></label></div></fieldset><button v-if="!feedback" class="check-button" :disabled="busy || selection === null">{{ busy ? 'Checking…' : 'Check answer' }}</button></form>
+        <div v-if="feedback" :class="['feedback',{incorrect: !feedback.is_correct}]" role="status"><h3>{{ feedback.is_correct ? 'Correct! +100 points' : 'Good try — let’s learn from this' }}</h3><p>Correct answer: <strong>{{ feedback.correct_answer }}</strong></p><p>{{ feedback.feedback }}</p><button :disabled="busy" @click="nextQuestion">{{ attempt.completed ? 'See my results →' : 'Next question →' }}</button></div><p class="muted">Each checked answer is saved and locked. Resume from the next unanswered question if you leave.</p>
+      </template>
     </section>
   </main>
 </template>
-
 <style scoped>
-.practice-page { max-width: 800px; }fieldset { border: 1px solid #9cafa7; border-radius: 8px; padding: 16px; margin: 24px 0; }legend { font-weight: 600; line-height: 1.5; }label { display: flex; align-items: center; gap: 12px; font-weight: normal; }input[type=radio] { width: auto; flex-shrink: 0; }article { border-top: 1px solid #dce6e2; padding-top: 12px; }section:focus { outline: 2px solid #176349; outline-offset: 8px; }
+.practice-page{max-width:1000px;margin:auto}.back-link{display:inline-block;margin-bottom:20px}.studio-header{padding:30px;border-radius:22px;background:linear-gradient(120deg,#7540b5,#a474dd);color:white}.studio-header h1{color:white;margin:12px 0;font-size:clamp(30px,5vw,44px)}.studio-header p,.studio-header .eyebrow{color:#f3e9fc}.muted{color:#655374;font-size:14px;line-height:1.6}.topic-grid,.answer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.topic-card,.quiz-panel,.history{background:white;border:1px solid #e6daf0;border-radius:20px;padding:26px;margin-top:20px}.topic-card h3{font-size:23px}.topic-symbol{display:inline-grid;place-items:center;width:60px;height:60px;border-radius:16px;background:#eee2fb;color:#7540b5;font-size:25px;font-weight:800}.topic-card button{width:100%;margin-top:18px}.history article,.quiz-top,.score-strip,.result-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.history article{padding:14px 0;border-top:1px solid #e9e0f2}.history h3{margin:0}.history p{font-size:13px;color:#655374}.secondary{background:#f3ecfa;color:#654487;border:1px solid #ddcbea}.quiz-panel:focus{outline:2px solid #9263c8;outline-offset:4px}.quiz-top .secondary{padding:9px 14px}.score-strip{background:#f5effb;padding:14px;border-radius:12px;font-size:13px;font-weight:700}progress{width:100%;height:10px;margin:18px 0;accent-color:#9155c9}fieldset{border:0;padding:0;margin:16px 0;min-width:0}legend{font-size:clamp(21px,3vw,28px);font-weight:750;line-height:1.5;margin-bottom:25px;width:100%}.answer-option{display:flex;align-items:center;gap:12px;border:3px solid transparent;border-radius:16px;min-height:110px;padding:22px;margin:0;color:white;cursor:pointer;font-size:18px;font-weight:650;overflow-wrap:anywhere}.option-0{background:#236991}.option-1{background:#8a407d}.option-2{background:#93600d}.option-3{background:#6540a3}.answer-option.chosen{border-color:#39204f;box-shadow:0 0 0 3px #dac5ee}.answer-option:focus-within{outline:3px solid #39204f;outline-offset:4px}.answer-option input{width:18px;height:18px;flex-shrink:0;accent-color:#5e308e;margin:0}.choice-letter{font-size:12px;border:1px solid #ffffff80;padding:5px 8px;border-radius:7px}.check-button{display:block;margin:24px 0 0 auto;min-width:180px}.feedback{padding:24px;background:#f3ebfa;border:1px solid #d5bce9;border-radius:16px;margin:22px 0}.feedback.incorrect{background:#fff6e7;border-color:#ead1a3}.feedback h3{margin-top:0}.feedback p{line-height:1.65}.results-hero{text-align:center;padding:25px 0}.result-symbol{font-size:60px;color:#9155c9}.big-score{display:block;font-size:64px;color:#7540b5}.result-actions{justify-content:center;margin-bottom:35px}.review-item{padding:22px 0;border-top:1px solid #e6daf0}.review-item p{line-height:1.6}.answer-tag{display:inline-block;background:#eee2fb;color:#654487;font-size:12px;padding:5px 10px;border-radius:20px;font-weight:700}.answer-tag.incorrect{background:#fff0d6;color:#765013}fieldset:disabled .answer-option{cursor:default}@media(max-width:600px){.topic-grid,.answer-grid{grid-template-columns:1fr}.studio-header,.quiz-panel,.history,.topic-card{padding:20px 16px}.answer-option{min-height:78px;padding:16px;font-size:17px}.check-button,.result-actions button{width:100%}.score-strip{gap:8px;font-size:12px}.quiz-top{align-items:flex-start}}
 </style>
