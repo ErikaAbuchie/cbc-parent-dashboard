@@ -6,6 +6,7 @@ const paths: Record<string, string> = {
   assessment: 'M9 4H5v17h14V4h-4M9 3h6v4H9Zm-1 9h8m-8 4h6',
   report: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6M8 13h8m-8 4h5',
   trend: 'M4 4v16h17M7 15l4-5 4 3 5-7',
+  settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z',
   practice: 'm9 11 3 3 8-9M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9',
   menu: 'M4 6h16M4 12h16M4 18h16', close: 'm6 6 12 12M6 18 18 6',
   arrow: 'M5 12h14m-6-6 6 6-6 6', lock: 'M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5Zm7 5v2',

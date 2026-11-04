@@ -4,18 +4,23 @@ const mobileOpen = ref(false)
 const menuButton = ref<HTMLButtonElement | null>(null)
 const drawer = ref<HTMLElement | null>(null)
 const teacher = computed(() => route.path.startsWith('/teacher/'))
+const { scale: textScale } = usePortalTextSize()
+useHead({ htmlAttrs: { style: computed(() => `--portal-font-scale: ${textScale.value}`) } })
 const links = computed(() => teacher.value ? [
   { to: '/teacher/dashboard', label: 'Dashboard', icon: 'home' },
   { to: '/teacher/students', label: 'Learners', icon: 'learners' },
   { to: '/teacher/assessments', label: 'Assessments', icon: 'assessment' },
   { to: '/teacher/reports', label: 'Reports', icon: 'report' },
+  { to: '/teacher/settings', label: 'Settings', icon: 'settings' },
 ] : [
   { to: '/parent/report', label: 'Overview', icon: 'home' },
   { to: '/parent/report?section=subjects', label: 'Subject results', icon: 'assessment' },
   { to: '/parent/report?section=trends', label: 'Trends', icon: 'trend' },
   { to: '/parent/report?section=guidance', label: 'Guidance', icon: 'leaf' },
   { to: '/parent/practice', label: 'Practice', icon: 'practice' },
+  { to: '/parent/settings', label: 'Settings', icon: 'settings' },
 ])
+const quickLinks = computed(() => links.value.filter(link => link.icon !== 'settings'))
 function isActive(to: string) {
   if (to.startsWith('/parent/report')) {
     const section = to.split('section=')[1] || 'overview'
@@ -67,10 +72,10 @@ function trapKeys(event: KeyboardEvent) {
       <div class="workspace-role"><span class="role-avatar"><HubIcon :name="teacher ? 'assessment' : 'learners'" /></span><span><strong>{{ teacher ? 'Teacher portal' : 'Parent portal' }}</strong><small>CBC Parent Insight</small></span></div>
     </aside>
     <div class="workspace-body" :inert="mobileOpen">
-      <header class="workspace-header"><button ref="menuButton" class="icon-button menu-toggle" aria-label="Open navigation" :aria-expanded="mobileOpen" aria-controls="workspace-nav" @click="mobileOpen = true"><HubIcon name="menu" /></button><div class="header-label"><span>{{ teacher ? 'Teacher workspace' : 'Family workspace' }}</span><strong>{{ title }}</strong></div><span class="header-badge"><span />{{ teacher ? 'Learning, connected' : 'Every step matters' }}</span><span class="header-emblem"><HubIcon name="leaf" /></span></header>
+      <header class="workspace-header"><button ref="menuButton" class="icon-button menu-toggle" aria-label="Open navigation" :aria-expanded="mobileOpen" aria-controls="workspace-nav" @click="mobileOpen = true"><HubIcon name="menu" /></button><div class="header-label"><span>{{ teacher ? 'Teacher workspace' : 'Family workspace' }}</span><strong>{{ title }}</strong></div><NuxtLink class="icon-button reading-settings-link" :to="teacher ? '/teacher/settings' : '/parent/settings'" aria-label="Reading settings"><HubIcon name="settings" /></NuxtLink><span class="header-badge"><span />{{ teacher ? 'Learning, connected' : 'Every step matters' }}</span><span class="header-emblem"><HubIcon name="leaf" /></span></header>
       <div id="workspace-content" class="workspace-content" tabindex="-1"><slot /></div>
       <footer class="workspace-footer">CBC Parent Insight <span>Supporting learning. Strengthening connection.</span></footer>
     </div>
-    <nav :inert="mobileOpen" class="mobile-bottom-nav" aria-label="Quick navigation"><NuxtLink v-for="link in links" :key="link.to" :to="link.to" :class="{ active: isActive(link.to) }" :aria-current="isActive(link.to) ? 'page' : undefined"><HubIcon :name="link.icon" /><span>{{ link.label }}</span></NuxtLink></nav>
+    <nav :inert="mobileOpen" class="mobile-bottom-nav" aria-label="Quick navigation"><NuxtLink v-for="link in quickLinks" :key="link.to" :to="link.to" :class="{ active: isActive(link.to) }" :aria-current="isActive(link.to) ? 'page' : undefined"><HubIcon :name="link.icon" /><span>{{ link.label }}</span></NuxtLink></nav>
   </div>
 </template>

@@ -41,7 +41,7 @@ li + li { margin-top: 20px; }
 .count { white-space: nowrap; font-weight: 600; }
 .bar-track { height: 16px; margin-top: 6px; background: #eaf3ee; border-radius: 4px; overflow: hidden; }
 .bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #12634f 0%, #258c6c 55%, #64c8a0 100%); }
-.scope-note { margin-bottom: 0; font-size: 14px; }
+.scope-note { margin-bottom: 0; font-size: 0.875rem; }
 @media print {
   .competency-summary { break-inside: avoid; background: #fff; border-color: #999; padding: 12px; }
   .bar-track, .bar { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
