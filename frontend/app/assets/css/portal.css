@@ -1,10 +1,6 @@
 /* Shared portal presentation. Screen-only rules preserve the report print layout. */
 @media screen {
   html { font-size: calc(100% * var(--portal-font-scale, 1)); }
-  .sidebar-theme-toggle { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; margin: 14px 0; border: 1px solid #ffffff60; border-radius: 12px; background: #ffffff10; color: white; font-size: 1rem; text-align: left; }
-  .sidebar-theme-toggle:hover:not(:disabled) { background: #ffffff24; box-shadow: none; }
-  .sidebar-theme-toggle svg { width: 20px; height: 20px; flex-shrink: 0; }
-  .sidebar-theme-toggle strong { margin-left: auto; font-size: .875rem; background: #ffffff24; padding: 3px 7px; border-radius: 8px; }
   :root { --ink: #2d2340; --muted: #756b83; --green: #7540b5; --green-dark: #4d287c; --line: #e9e1f2; --mint: #f4eefc; }
   body { background: #eee3fa; background-image: radial-gradient(ellipse at 15% 0%, #e0d0f7, transparent 65%); }
   a:hover { color: #542889; }

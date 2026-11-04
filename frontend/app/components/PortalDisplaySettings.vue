@@ -1,6 +1,5 @@
 <script setup lang="ts">
 const { size } = usePortalTextSize()
-const { theme } = usePortalAppearance()
 const options = [
   { value: 'standard', label: 'Standard', description: 'Keep the current text size.' },
   { value: 'large', label: 'Large', description: 'Make text a little bigger.' },
@@ -12,11 +11,7 @@ const options = [
   <section class="display-settings" aria-labelledby="display-settings-title">
     <span class="eyebrow">MAKE YOURSELF COMFORTABLE</span>
     <h1 id="display-settings-title">Display settings</h1>
-    <p>Choose a comfortable appearance and text size. Your choices apply throughout this portal.</p>
-    <fieldset><legend>Appearance</legend><div class="text-size-options theme-options">
-      <label :class="{ selected: theme === 'light' }"><input v-model="theme" type="radio" name="portal-theme" value="light"><span><strong>Light mode</strong><small>Light backgrounds with purple accents.</small></span></label>
-      <label :class="{ selected: theme === 'dark' }"><input v-model="theme" type="radio" name="portal-theme" value="dark"><span><strong>Dark mode</strong><small>Darker backgrounds for a softer screen.</small></span></label>
-    </div></fieldset>
+    <p>Choose the text size that feels easiest to read. Your choice applies throughout this portal.</p>
     <fieldset><legend>Text size</legend><div class="text-size-options">
       <label v-for="option in options" :key="option.value" :class="{ selected: size === option.value }">
         <input v-model="size" type="radio" name="portal-text-size" :value="option.value">
@@ -24,7 +19,7 @@ const options = [
       </label>
     </div></fieldset>
     <div class="reading-preview"><h2>How your text will look</h2><p>Every learner grows at their own pace. Read the results, explore the details and choose a helpful next step.</p></div>
-    <p class="saved-setting" role="status">{{ theme === 'dark' ? 'Dark' : 'Light' }} mode · {{ options.find(option => option.value === size)?.label }} text. Changes are saved automatically.</p>
+    <p class="saved-setting" role="status">{{ options.find(option => option.value === size)?.label }} text selected. Changes are saved automatically.</p>
     <button type="button" :disabled="size === 'standard'" @click="size = 'standard'">Reset to standard</button>
     <p class="settings-note">This browser remembers separate choices for the parent and teacher portals. Printed reports keep their light background and usual text size.</p>
   </section>
