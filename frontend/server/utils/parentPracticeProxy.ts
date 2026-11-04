@@ -3,7 +3,7 @@ import type { H3Event } from 'h3'
 export async function parentPracticeProxy(event: H3Event, path = '') {
   setResponseHeader(event, 'Cache-Control', 'no-store')
   const method = getMethod(event)
-  if (!((!path && ['GET', 'POST'].includes(method)) || (method === 'GET' && /^\d+$/.test(path)) || (method === 'POST' && /^\d+\/submit$/.test(path)))) {
+  if (!((!path && ['GET', 'POST'].includes(method)) || (method === 'GET' && /^\d+$/.test(path)) || (method === 'POST' && /^\d+\/(submit|answer)$/.test(path)))) {
     throw createError({ statusCode: 404, statusMessage: 'Practice endpoint not found.' })
   }
   const token = getCookie(event, 'parent_session')
@@ -16,10 +16,11 @@ export async function parentPracticeProxy(event: H3Event, path = '') {
   } catch (error: any) {
     const status = error.response?.status
     if (status === 401) deleteCookie(event, 'parent_session', { path: '/' })
-    throw createError({ statusCode: [401, 404, 422, 429].includes(status) ? status : 502,
+    throw createError({ statusCode: [401, 404, 409, 422, 429].includes(status) ? status : 502,
       statusMessage: status === 401 ? 'Your session has ended. Please verify your code again.'
         : status === 404 ? 'This practice topic or attempt is unavailable for your report.'
-        : status === 422 ? 'Select one answer for every question, then try again.'
+        : status === 409 ? 'This answer is already saved. Return to topics and resume your quiz.'
+        : status === 422 ? 'Choose a valid answer for the current question, then try again.'
         : status === 429 ? 'Please wait ten minutes before starting more practice attempts.'
         : 'Cannot load practice. Please try again.' })
   }

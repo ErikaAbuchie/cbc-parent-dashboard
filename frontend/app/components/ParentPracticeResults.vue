@@ -18,7 +18,7 @@ function completedDate(value: string) {
     <template v-else>
       <p v-if="!data?.history.length">No completed practice attempts for the topics in this report yet.</p>
       <template v-else>
-        <p>Up to five most recently completed attempts for the topics currently available in this report. Dates are shown in Kenya time.</p>
+        <p>Up to five most recently completed attempts for assessed topics in this report, including archived exercises. Dates are shown in Kenya time.</p>
         <ol class="attempts"><li v-for="item in data.history" :key="item.id">
           <h3>{{ item.topic }}</h3><p class="mark"><strong>{{ item.correct_count }} of {{ item.total }} correct</strong></p>
           <p>Completed: <time :datetime="item.completed_at">{{ completedDate(item.completed_at) }}</time> (EAT)</p>

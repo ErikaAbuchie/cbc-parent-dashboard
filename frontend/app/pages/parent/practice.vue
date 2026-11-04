@@ -1,8 +1,8 @@
 <script setup lang="ts">
-type Topic = { id: number; name: string; learning_area: string; competency_level: string }
+type Topic = { exercise_id?: number | null; question_count: number; source: string; sub_strand?: string; id: number; name: string; learning_area: string; competency_level?: string }
 type History = { id: number; topic: string; completed_at: string; correct_count: number; total: number }
 type Answer = { question_id: number; selected_index: number; is_correct: boolean; correct_answer: string; feedback: string }
-type Attempt = { id: number; sub_strand_id: number; sub_strand: string; completed: boolean; questions: { id: number; question: string; options: string[] }[]; answered: Answer[]; review?: { question: string; selected_answer: string; correct_answer: string; is_correct: boolean; feedback: string }[] }
+type Attempt = { exercise_id?: number | null; exercise_title?: string | null; id: number; sub_strand_id: number; sub_strand: string; completed: boolean; questions: { id: number; question: string; options: string[] }[]; answered: Answer[]; review?: { question: string; selected_answer: string; correct_answer: string; is_correct: boolean; feedback: string }[] }
 useHead({ title: 'Quiz studio | CBC Parent Insight' })
 const { data, error, refresh } = await useFetch<{ topics: Topic[]; history: History[] }>('/api/parent/practice')
 if (error.value?.statusCode === 401) await navigateTo('/parent/login', { replace: true })
@@ -32,11 +32,11 @@ async function fail(error: any) {
   if (error.statusCode === 401 || error.response?.status === 401) { await navigateTo('/parent/login', { replace: true }); return }
   message.value = error.data?.statusMessage || 'Practice is unavailable. Please try again.'
 }
-async function openAttempt(topicId?: number, historyId?: number) {
+async function openAttempt(topicId?: number, historyId?: number, exerciseId?: number) {
   if (busy.value) return
   busy.value = true; message.value = ''
   try {
-    const result = historyId ? await $fetch<Attempt>(`/api/parent/practice/${historyId}`) : await $fetch<Attempt>('/api/parent/practice', { method: 'POST', body: { sub_strand_id: topicId } })
+    const result = historyId ? await $fetch<Attempt>(`/api/parent/practice/${historyId}`) : await $fetch<Attempt>('/api/parent/practice', { method: 'POST', body: exerciseId ? { exercise_id: exerciseId } : { sub_strand_id: topicId } })
     attempt.value = result; showResults.value = result.completed; selection.value = null
     const next = result.questions.findIndex(q => !result.answered.some(a => a.question_id === q.id))
     currentIndex.value = next < 0 ? 0 : next
@@ -74,15 +74,15 @@ function backToTopics() { attempt.value = null; selection.value = null; message.
     <p class="muted">Self-paced practice with instant explanations. Scores do not change teacher competency ratings.</p>
     <p v-if="error" class="error" role="alert">{{ error.data?.statusMessage || 'Cannot load practice.' }} <button @click="refresh()">Retry</button></p>
     <p v-if="message" class="error" role="alert">{{ message }}</p><p v-if="busy" role="status">Saving or loading your quiz…</p>
-    <template v-if="data && !attempt"><h2>Pick your next challenge</h2><p class="muted">Grade 5 Mathematics pilot · 3 authored questions per topic · No timer</p>
+    <template v-if="data && !attempt"><h2>Pick your next challenge</h2><p class="muted">Teacher exercises and starter practice for the topics in this report · No timer</p>
       <p v-if="!data.topics.length">No practice quiz is available for the topics in this report yet.</p>
-      <div class="topic-grid"><article v-for="(topic,index) in data.topics" :key="topic.id" class="topic-card"><span class="topic-symbol" aria-hidden="true">{{ index % 2 ? '+' : '123' }}</span><p class="eyebrow">{{ topic.learning_area }}</p><h3>{{ topic.name }}</h3><p>3 questions · Multiple choice</p><button :disabled="busy" @click="openAttempt(topic.id)">Play or resume →</button></article></div>
+      <div class="topic-grid"><article v-for="(topic,index) in data.topics" :key="`${topic.exercise_id ? 'exercise' : 'pilot'}-${topic.exercise_id || topic.id}`" class="topic-card"><span class="topic-symbol" aria-hidden="true">{{ index % 2 ? '+' : '123' }}</span><p class="eyebrow">{{ topic.learning_area }}</p><h3>{{ topic.name }}</h3><p>{{ topic.question_count }} {{ topic.question_count === 1 ? 'question' : 'questions' }} · Multiple choice</p><p class="muted">{{ topic.source === 'teacher' ? 'Teacher exercise' : 'Starter practice' }}<span v-if="topic.sub_strand"> · {{ topic.sub_strand }}</span></p><button :disabled="busy" @click="openAttempt(topic.id, undefined, topic.exercise_id || undefined)">Play or resume →</button></article></div>
       <section class="history"><h2>Your recent rounds</h2><p v-if="!data.history.length">Your completed quizzes will appear here.</p><article v-for="item in data.history" :key="item.id"><div><h3>{{ item.topic }}</h3><p>{{ item.correct_count }} / {{ item.total }} correct · {{ new Date(item.completed_at).toLocaleString() }}</p></div><button class="secondary" :disabled="busy" @click="openAttempt(undefined,item.id)">Review</button></article></section>
     </template>
     <section v-if="attempt" ref="panel" class="quiz-panel" tabindex="-1" aria-labelledby="practice-heading" :aria-busy="busy">
-      <div class="quiz-top"><span class="eyebrow">{{ showResults ? 'ROUND COMPLETE' : 'YOUR PRACTICE ROUND' }}</span><button class="secondary" :disabled="busy" @click="backToTopics">Back to topics</button></div><h2 id="practice-heading">{{ attempt.sub_strand }}</h2>
+      <div class="quiz-top"><span class="eyebrow">{{ showResults ? 'ROUND COMPLETE' : 'YOUR PRACTICE ROUND' }}</span><button class="secondary" :disabled="busy" @click="backToTopics">Back to topics</button></div><h2 id="practice-heading">{{ attempt.exercise_title || attempt.sub_strand }}</h2>
       <template v-if="showResults"><div class="results-hero"><span class="result-symbol" aria-hidden="true">✦</span><h3>{{ accuracy === 100 ? 'Brilliant round!' : 'Every question helps you grow!' }}</h3><strong class="big-score">{{ correct }} / {{ attempt.questions.length }}</strong><p>{{ accuracy }}% accuracy · {{ correct * 100 }} practice points</p><p>These points are for this practice round only.</p></div>
-        <div class="result-actions"><button :disabled="busy" @click="openAttempt(attempt.sub_strand_id)">Play again</button><button class="secondary" :disabled="busy" @click="backToTopics">Choose another topic</button></div><h3>Review your answers</h3>
+        <div class="result-actions"><button :disabled="busy" @click="openAttempt(attempt.sub_strand_id, undefined, attempt.exercise_id || undefined)">Play again</button><button class="secondary" :disabled="busy" @click="backToTopics">Choose another topic</button></div><h3>Review your answers</h3>
         <article v-for="(item,index) in attempt.review" :key="index" class="review-item"><span :class="['answer-tag',{ incorrect: !item.is_correct }]">{{ item.is_correct ? 'Correct' : 'Keep practising' }}</span><h3>{{ index+1 }}. {{ item.question }}</h3><p>Your answer: {{ item.selected_answer }}</p><p>Correct answer: <strong>{{ item.correct_answer }}</strong></p><p>{{ item.feedback }}</p></article>
       </template>
       <template v-else-if="current"><div class="score-strip"><span>Question {{ currentIndex+1 }} / {{ attempt.questions.length }}</span><span>{{ correct * 100 }} points</span><span>{{ streak }} answer streak</span></div><progress :value="attempt.answered.length" :max="attempt.questions.length" aria-label="Questions answered" />

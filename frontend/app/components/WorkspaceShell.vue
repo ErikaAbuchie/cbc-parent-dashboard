@@ -11,6 +11,7 @@ const links = computed(() => teacher.value ? [
   { to: '/teacher/students', label: 'Learners', icon: 'learners' },
   { to: '/teacher/assessments', label: 'Assessments', icon: 'assessment' },
   { to: '/teacher/reports', label: 'Reports', icon: 'report' },
+  { to: '/teacher/practice', label: 'Practice exercises', icon: 'practice' },
   { to: '/teacher/settings', label: 'Settings', icon: 'settings' },
 ] : [
   { to: '/parent/report', label: 'Overview', icon: 'home' },
