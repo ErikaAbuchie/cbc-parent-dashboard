@@ -6,13 +6,21 @@ defineProps<{ subjects: Subject[]; method: string; demo?: boolean }>()
 const levels: Record<string, string> = { EE: 'Exceeding Expectations', ME: 'Meeting Expectations', AE: 'Approaching Expectations', BE: 'Below Expectations' }
 const allOpen = ref(false)
 const panels = ref<HTMLElement | null>(null)
+const route = useRoute()
+async function revealLinkedSubject() {
+  await nextTick()
+  if (!/^#subject-\d+$/.test(route.hash)) return
+  const target = panels.value?.querySelector<HTMLDetailsElement>(route.hash)
+  if (target) { target.open = true; target.scrollIntoView({ block: 'start', behavior: 'auto' }) }
+}
+watch(() => route.hash, revealLinkedSubject)
 function expandAll(open: boolean) {
   allOpen.value = open
   panels.value?.querySelectorAll('details').forEach(detail => { detail.open = open })
 }
 function preparePrint() { panels.value?.querySelectorAll('details').forEach(detail => { detail.setAttribute('data-was-open', String(detail.open)); detail.open = true }) }
 function restorePrint() { panels.value?.querySelectorAll('details').forEach(detail => { if (detail.hasAttribute('data-was-open')) { detail.open = detail.getAttribute('data-was-open') === 'true'; detail.removeAttribute('data-was-open') } }) }
-onMounted(() => { window.addEventListener('beforeprint', preparePrint); window.addEventListener('afterprint', restorePrint) })
+onMounted(() => { window.addEventListener('beforeprint', preparePrint); window.addEventListener('afterprint', restorePrint); revealLinkedSubject() })
 onBeforeUnmount(() => { window.removeEventListener('beforeprint', preparePrint); window.removeEventListener('afterprint', restorePrint) })
 </script>
 
@@ -23,7 +31,7 @@ onBeforeUnmount(() => { window.removeEventListener('beforeprint', preparePrint);
     <p class="summary-method">{{ method }} Summaries cover only included assessments. Subjects contain strands, and each strand contains sub-strands.</p>
     <details class="rubric-guide"><summary>How the KNEC rubric levels are used</summary><p>EE (4): exceeds the competency requirements. ME (3): meets the requirements. AE (2): is progressing towards them. BE (1): needs additional time and support. Teachers select levels using the relevant assessment criteria and descriptors.</p><p>An average such as 2.79 / 4 summarises recorded ratings. It is not a percentage or an automatically assessed overall level. The previous prototype cutoffs have been removed.</p><p><a href="https://www.knec.ac.ke/wp-content/uploads/2021/06/CBA-Age-Based-Regular-Training-Manual.pdf" target="_blank" rel="noopener noreferrer">KNEC rubric and reporting guidance (pages 38–40, 77–79)</a></p></details>
     <p v-if="!subjects.length">No assessed subjects are included in this report yet.</p>
-    <details v-for="subject in subjects" :key="subject.id" class="subject-panel">
+    <details v-for="subject in subjects" :id="`subject-${subject.id}`" :key="subject.id" class="subject-panel">
       <summary><span class="disclosure-arrow" aria-hidden="true">›</span><span class="subject-name"><strong>{{ subject.name }}</strong><small>{{ subject.strands.length }} strands · {{ subject.assessed_count }} assessed sub-strands</small></span><span class="grade"><strong>{{ subject.average_score?.toFixed(2) || '—' }} / 4</strong><span>Average rubric score</span><small>Overall performance level not assessed</small></span></summary>
       <div class="strand-list"><details v-for="strand in subject.strands" :key="strand.id" class="strand-panel"><summary><span class="disclosure-arrow" aria-hidden="true">›</span><span class="strand-name"><strong>{{ strand.name }}</strong><small>{{ strand.assessed_count }} assessed sub-strands · View ratings</small></span><span class="strand-grade">{{ strand.average_score?.toFixed(2) || '—' }} / 4<small>Average rubric score</small></span></summary>
         <div class="sub-list"><article v-for="sub in strand.sub_strands" :key="sub.id"><div class="sub-row"><h4>{{ sub.name }}</h4><span class="sub-level" :class="`grade-${sub.competency_level.toLowerCase()}`"><strong>{{ sub.competency_level }}</strong> — {{ levels[sub.competency_level] }}</span></div><p v-if="sub.remarks">{{ sub.remarks }}</p></article></div>

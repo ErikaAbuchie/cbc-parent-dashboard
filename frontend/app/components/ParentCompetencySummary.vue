@@ -15,8 +15,8 @@ const unrecognised = computed(() => total.value - rows.value.reduce((sum, row) =
 </script>
 
 <template>
-  <section class="competency-summary" aria-labelledby="summary-heading">
-    <h2 id="summary-heading">Competency overview</h2>
+  <section class="competency-summary" aria-labelledby="competency-overview-heading">
+    <h2 id="competency-overview-heading">Competency overview</h2>
     <template v-if="total">
       <p>{{ total }} assessed {{ total === 1 ? 'sub-strand is' : 'sub-strands are' }} included in this report. Each bar counts sub-strands at that level.</p>
       <ul class="level-list">

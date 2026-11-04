@@ -1,15 +1,15 @@
 <script setup lang="ts">
-defineProps<{ learnerName: string }>()
+defineProps<{ learnerName: string; compact?: boolean }>()
 </script>
 
 <template>
-  <section class="parent-welcome" aria-labelledby="parent-welcome-heading">
+  <section class="parent-welcome" :class="{ 'compact-welcome': compact }" aria-labelledby="parent-welcome-heading">
     <img class="welcome-brain" src="/images/welcome-brain.png" alt="" width="4000" height="4000" aria-hidden="true" />
     <div class="welcome-copy">
       <span class="eyebrow">GROWING TOGETHER, ONE STEP AT A TIME</span>
       <h2 id="parent-welcome-heading">Welcome back.</h2>
-      <p>Here to support <strong>{{ learnerName }}</strong>.<br>Celebrate progress and discover the next step together.</p>
-      <a class="welcome-link" href="#report-overview">Explore the report <HubIcon name="arrow" /></a>
+      <p>Here to support <strong>{{ learnerName }}</strong>.<template v-if="!compact"><br>Celebrate progress and discover the next step together.</template></p>
+      <a v-if="!compact" class="welcome-link" href="#report-overview">Explore the report <HubIcon name="arrow" /></a>
     </div>
   </section>
 </template>

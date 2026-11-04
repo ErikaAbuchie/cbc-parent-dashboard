@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import './assets/css/main.css'
+import './assets/css/portal.css'
 const route = useRoute()
 const workspace = computed(() => /^\/(teacher|parent)\//.test(route.path) && !route.path.endsWith('/login'))
 </script>

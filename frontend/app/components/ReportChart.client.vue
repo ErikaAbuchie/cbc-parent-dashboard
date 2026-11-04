@@ -4,6 +4,11 @@ import type { ChartData, ChartOptions } from 'chart.js'
 import { Radar, Line } from 'vue-chartjs'
 ChartJS.register(RadialLinearScale, CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 const props = defineProps<{ kind: 'radar' | 'line'; labels: string[]; values: (number | null)[]; title: string }>()
+const chartView = ref<{ chart?: { resize: (width?: number, height?: number) => void } } | null>(null)
+function preparePrint() { chartView.value?.chart?.resize(640, 300) }
+function restorePrint() { chartView.value?.chart?.resize() }
+onMounted(() => { window.addEventListener('beforeprint', preparePrint); window.addEventListener('afterprint', restorePrint) })
+onBeforeUnmount(() => { window.removeEventListener('beforeprint', preparePrint); window.removeEventListener('afterprint', restorePrint) })
 const radarData = computed<ChartData<'radar'>>(() => ({ labels: props.labels.filter((_, i) => props.values[i] !== null), datasets: [{ label: props.title, data: props.values.filter((v): v is number => v !== null),
   borderColor: '#9155c9', backgroundColor: 'rgba(145, 85, 201, .16)', pointBackgroundColor: '#9155c9', pointRadius: 4, borderWidth: 2 }] }))
 const lineData = computed<ChartData<'line'>>(() => ({ labels: props.labels, datasets: [{ label: props.title, data: props.values,
@@ -19,5 +24,5 @@ const lineOptions: ChartOptions<'line'> = { responsive: true, maintainAspectRati
     x: { grid: { display: false }, ticks: { color: '#60516e', font: { size: 14 } } } } }
 </script>
 
-<template><div class="chart-canvas"><Radar v-if="kind === 'radar'" :data="radarData" :options="radarOptions" role="img" :aria-label="title" /><Line v-else :data="lineData" :options="lineOptions" role="img" :aria-label="title" /></div></template>
+<template><div class="chart-canvas"><Radar v-if="kind === 'radar'" ref="chartView" :data="radarData" :options="radarOptions" role="img" :aria-label="title" /><Line v-else ref="chartView" :data="lineData" :options="lineOptions" role="img" :aria-label="title" /></div></template>
 <style scoped>.chart-canvas { position: relative; height: 320px; width: 100%; min-width: 0; }@media(max-width:480px) { .chart-canvas { height: 290px; } }@media print { .chart-canvas { height: 260px; } }</style>

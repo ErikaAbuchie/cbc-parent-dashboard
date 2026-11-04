@@ -1,5 +1,20 @@
 <script setup lang="ts">
-useHead({ title: 'Learner report | CBC Parent Insight' })
+const route = useRoute()
+const section = computed(() => ['subjects', 'trends', 'guidance'].includes(String(route.query.section)) ? String(route.query.section) : 'overview')
+const sectionNames: Record<string, string> = { overview: 'Overview', subjects: 'Subject results', trends: 'Trends', guidance: 'Guidance' }
+useHead({ title: computed(() => `${sectionNames[section.value]} | CBC Parent Insight`) })
+const sectionHeading = ref<HTMLElement | null>(null)
+watch(section, async () => {
+  await nextTick()
+  if (route.hash) {
+    const target = document.getElementById(route.hash.slice(1))
+    if (target instanceof HTMLDetailsElement) target.open = true
+    target?.scrollIntoView({ block: 'start', behavior: 'auto' })
+  } else {
+    sectionHeading.value?.focus({ preventScroll: true })
+    sectionHeading.value?.scrollIntoView({ block: 'start', behavior: 'auto' })
+  }
+})
 const { data: report, error, refresh } = await useFetch('/api/parent/report')
 if (error.value?.statusCode === 401) await navigateTo('/parent/login', { replace: true })
 const busy = ref(false)
@@ -7,7 +22,6 @@ const errorMessage = ref('')
 function printReport() {
   if (report.value && !busy.value) window.print()
 }
-const levels: Record<string, string> = { EE: 'Exceeding Expectations', ME: 'Meeting Expectations', AE: 'Approaching Expectations', BE: 'Below Expectations' }
 async function closeReport() {
   busy.value = true; errorMessage.value = ''
   try { await $fetch('/api/parent/logout', { method: 'POST' }); report.value = null; await navigateTo('/parent/login', { replace: true }) }
@@ -17,17 +31,18 @@ async function closeReport() {
 </script>
 
 <template>
-  <main class="parent-report">
+  <main class="parent-report parent-dashboard-page" :class="{ 'is-overview': section === 'overview' }">
     <template v-if="report">
-      <ParentWelcomeBanner :learner-name="report.student.full_name" />
+      <div v-show="section === 'overview'" class="overview-welcome"><ParentWelcomeBanner :learner-name="report.student.full_name" compact /></div>
       <section class="learner-banner"><div><span class="eyebrow">YOUR LEARNER'S JOURNEY</span><h1>{{ report.student.full_name }}</h1><p>{{ report.student.school_name }} · {{ report.student.class_name }}</p><span class="term-badge">{{ report.term }}</span><span class="admission-label">Admission {{ report.student.admission_number }}</span></div><span class="learner-emblem"><HubIcon name="leaf" /></span></section>
-      <div class="report-actions report-toolbar"><NuxtLink class="practice-link" to="/parent/practice"><HubIcon name="practice" />Open learner practice</NuxtLink><button type="button" :disabled="busy" @click="printReport"><HubIcon name="report" />Print / Save as PDF</button></div>
-      <p class="report-actions print-help">In the print window, choose your printer or Save as PDF. Turn off browser headers and footers for a cleaner copy.</p>
-      <div id="report-overview" class="report-overview"><ParentCompetencySummary :assessments="report.assessments" /></div>
-      <ParentReportCharts :subjects="report.subjects" :trend="report.trend" />
-      <ParentSubjectResults :subjects="report.subjects" :method="report.summary_method" :demo="report.has_demo_results" />
-      <ParentReportExplanation v-if="report.assessments.length" :subjects="report.subjects" />
-      <ParentPracticeResults />
+      <div class="report-actions report-toolbar"><h2 ref="sectionHeading" class="section-heading" tabindex="-1">{{ sectionNames[section] }}</h2><button v-if="section !== 'overview'" type="button" :disabled="busy" @click="printReport"><HubIcon name="report" />Print / Save full report</button></div>
+      <section id="report-overview" v-show="section === 'overview'" class="report-view overview-view" aria-label="Dashboard overview"><ParentDashboardOverview :subjects="report.subjects" :assessments="report.assessments" :demo="report.has_demo_results"><template #actions><button type="button" :disabled="busy" @click="printReport">Print / Save full report</button></template></ParentDashboardOverview></section>
+      <div class="print-summary"><ParentCompetencySummary :assessments="report.assessments" /></div>
+      <section v-show="section === 'subjects'" class="report-view" aria-label="Subject results"><ParentSubjectResults :subjects="report.subjects" :method="report.summary_method" :demo="report.has_demo_results" /></section>
+      <section v-show="section === 'trends'" class="report-view" aria-label="Subject overview and term trends"><ParentReportCharts :subjects="report.subjects" :trend="report.trend" /></section>
+      <section v-show="section === 'guidance'" class="report-view" aria-label="Explanations and home guidance"><ParentReportExplanation v-if="report.assessments.length" :subjects="report.subjects" /><p v-else>No assessment results are available for guidance yet.</p></section>
+      <section class="print-summary" aria-label="Practice results"><ParentPracticeResults /></section>
+      <p class="report-actions print-help">Print includes all report sections, whichever view is open. Choose Save as PDF in the print window.</p>
       <div class="report-actions close-report-row"><span>Your report is available only through verified parent access.</span><button class="secondary" :disabled="busy" @click="closeReport">{{ busy ? 'Closing…' : 'Close report' }}</button></div><p v-if="errorMessage" class="error report-actions" role="alert">{{ errorMessage }}</p>
       <p class="printed-note">This copy shows the results displayed when printed. Later teacher updates will appear when the online report is reloaded.</p>
     </template>
@@ -38,6 +53,8 @@ async function closeReport() {
 <style scoped>
 .parent-report { max-width: 1000px; }
 .report-overview { scroll-margin-top: 24px; }
+.section-heading { margin: 0; scroll-margin-top: 24px; }
+.print-summary { display: none; }
 .learner-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 26px; border-radius: 15px; background: linear-gradient(110deg, #eaf7ed, #e4f3ef); }.learner-banner h1 { margin-top: 12px; }.learner-banner p { color: #607d72; }.learner-emblem { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; background: #cdebd8; color: #19946b; flex-shrink: 0; }.learner-emblem svg { width: 44px; height: 44px; }.term-badge { display: inline-block; border-radius: 6px; background: #fff; color: #317357; font-size: 12px; font-weight: 650; padding: 7px 10px; }.admission-label { display: inline-block; font-size: 12px; color: #6c857a; margin-left: 12px; }.report-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-top: 20px; }.report-toolbar button { display: inline-flex; gap: 8px; align-items: center; margin: 0; font-size: 13px; }.report-toolbar svg { width: 18px; height: 18px; }.practice-link { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; padding: 12px 0; }.print-help { color: #6e837c; font-size: 12px; }.result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }.result-card { border: 1px solid #deebe5; border-radius: 12px; padding: 20px; }.subject-label { font-size: 11px; font-weight: 700; color: #387a60; text-transform: uppercase; letter-spacing: .8px; }.result-card h3 { margin: 10px 0 6px; }.strand-label { color: #688178; font-size: 12px; margin: 5px 0; }.rating-pill { font-size: 12px; display: inline-flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; background: #e9f6ed; color: #276c4e; }.rating-ae { background: #fff3da; color: #865f12; }.rating-be { background: #fceceb; color: #a3433f; }.rating-me { background: #e7f3f5; color: #326f7c; }.teacher-remark { padding-top: 12px; border-top: 1px solid #e6eee8; font-size: 14px; color: #4f7063; }.close-report-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: space-between; align-items: center; font-size: 12px; color: #71897e; }.close-report-row button { margin: 0; }.secondary { background: #eaf3ed; color: #285b47; }
 @media (max-width: 600px) { .learner-banner { padding: 20px 16px; }.learner-emblem { display: none; }.admission-label { display: block; margin: 10px 0 0; }.result-grid { grid-template-columns: 1fr; }.result-card { padding: 17px; }.report-toolbar { align-items: stretch; }.report-toolbar button { justify-content: center; }.learner-banner .eyebrow { font-size: 10px; } }
 
@@ -45,6 +62,8 @@ article { border-top: 1px solid #dce6e2; padding: 12px 0; overflow-wrap: anywher
 .report-actions p { font-size: 14px; }
 .printed-note { display: none; }
 @media print {
+  .report-view, .print-summary { display: block !important; }
+  .overview-view, .overview-welcome { display: none !important; }
   .parent-report { max-width: none; width: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; color: #000; }
   .report-actions { display: none !important; }
   .learner-banner { padding: 0; background: white; }.learner-emblem { display: none; }.result-grid { display: block; }.result-card { margin: 12px 0; }.rating-pill { color: black; background: white; border: 1px solid #aaa; }
