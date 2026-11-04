@@ -1,5 +1,5 @@
 <script setup lang="ts">
-type Point = { term: string; average_score: number | null; assessed_count: number; has_demo_results: boolean }
+type Point = { term: string; average_score: number | null; assessed_count: number }
 type Subject = { id: number; name: string; average_score: number | null; assessed_count: number }
 type Trend = { year: number | null; terms: string[]; subjects: { id: number; name: string; points: Point[] }[] }
 const props = defineProps<{ subjects: Subject[]; trend: Trend }>()
@@ -28,7 +28,7 @@ const trendValues = computed(() => selected.value?.points.map(point => point.ave
     <section class="chart-card" aria-labelledby="trend-heading"><span class="eyebrow">LEARNING OVER TIME</span><h2 id="trend-heading">Term-by-term trend<span v-if="trend.year"> · {{ trend.year }}</span></h2><label for="trend-subject">Choose a subject</label><select id="trend-subject" v-model="selectedId" :disabled="!trend.subjects.length"><option v-if="!trend.subjects.length" value="">No subject available</option><option v-for="subject in trend.subjects" :key="subject.id" :value="String(subject.id)">{{ subject.name }}</option></select>
       <ReportChart v-if="available" kind="line" :labels="trendLabels" :values="trendValues" :title="`${selected?.name} term averages out of 4; values listed below`" />
       <p v-if="available < 2" class="empty-chart">{{ available === 1 ? 'Only one term is available. A trend line needs at least two finalised terms.' : 'No finalised term results are available for this subject yet.' }}</p>
-      <div v-if="selected" class="trend-values"><div v-for="point in selected.points" :key="point.term"><span>{{ point.term }}</span><strong>{{ point.average_score === null ? 'Not available' : `${point.average_score.toFixed(2)} / 4` }}</strong><small>{{ point.assessed_count }} assessed sub-strands<span v-if="point.has_demo_results"> · Includes demo data</span></small></div></div>
+      <div v-if="selected" class="trend-values"><div v-for="point in selected.points" :key="point.term"><span>{{ point.term }}</span><strong>{{ point.average_score === null ? 'Not available' : `${point.average_score.toFixed(2)} / 4` }}</strong><small>{{ point.assessed_count }} assessed sub-strands</small></div></div>
       <p class="chart-note">Uses this learner's finalised reports from the same teacher, up to the displayed term. Topic coverage may differ between terms. Gaps mean unavailable results, not zero.</p>
     </section>
   </section>

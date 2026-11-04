@@ -126,7 +126,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
     <p v-if="classError || sessionError" class="error" role="alert">{{ classError?.data?.statusMessage || sessionError?.data?.statusMessage }}</p>
     <template v-else-if="session">
       <label for="student-class">Assigned class</label>
-      <select id="student-class" v-model="classId" :disabled="busy || dirty || !!membershipChange" @change="loadClass"><option value="">Select class</option><option v-for="item in classData?.classes" :key="item.id" :value="String(item.id)">{{ item.name }}</option></select>
+      <select id="student-class" v-model="classId" :disabled="busy || dirty || !!membershipChange" @change="loadClass"><option value="">Select class</option><option v-for="item in classData?.classes" :key="item.id" :value="String(item.id)">{{ displayName(item.name) }}</option></select>
       <p v-if="!classData?.classes.length">No classes have been assigned to you. Contact your school administrator.</p>
       <p v-if="busy" role="status">Working…</p>
       <div v-if="errorMessage" class="error" role="alert">{{ errorMessage }}<p v-for="(item, index) in validationErrors" :key="index">{{ item }}</p></div>
@@ -136,14 +136,14 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
         <h2>{{ editingId ? 'Edit student' : 'Add student' }}</h2>
         <section v-if="membershipChange" ref="membershipPanel" class="confirmation" tabindex="-1" role="region" aria-labelledby="membership-heading">
           <h2 id="membership-heading">{{ membershipChange.restore ? 'Restore student?' : 'Remove student?' }}</h2>
-          <p>{{ membershipChange.student.full_name }} will be {{ membershipChange.restore ? 'restored to' : 'removed from' }} this class's active roster.</p>
+          <p>{{ displayName(membershipChange.student.full_name) }} will be {{ membershipChange.restore ? 'restored to' : 'removed from' }} this class's active roster.</p>
           <p v-if="!membershipChange.restore">Assessment history will be retained. Existing parent access codes will be deactivated.</p>
           <p v-else>Previous parent access codes will remain inactive.</p>
           <button :disabled="busy" @click="confirmMembershipChange">{{ membershipChange.restore ? 'Confirm restore' : 'Confirm removal' }}</button>
           <button class="secondary" :disabled="busy" @click="membershipChange = null">Cancel change</button>
         </section>
         <form @submit.prevent="saveStudent"><fieldset :disabled="busy || !!membershipChange">
-          <label for="student-name">Full name</label><input id="student-name" v-model="form.full_name" maxlength="255" required>
+          <label for="student-name">Full name</label><input id="student-name" :value="displayName(form.full_name)" @input="form.full_name = ($event.target as HTMLInputElement).value" maxlength="255" required>
           <label for="student-admission">Admission number</label><input id="student-admission" v-model="form.admission_number" maxlength="50" required>
           <label for="student-phone">Parent phone number</label><input id="student-phone" v-model="form.parent_phone_number" type="tel" placeholder="+2547XXXXXXXX" :required="!editingId" maxlength="20" aria-describedby="phone-help">
           <p id="phone-help">Use international format: +254 followed by a 7 or 1 and eight digits. Adding or editing a student does not send an SMS.</p>
@@ -152,10 +152,10 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
         </fieldset></form>
         <h2>Active learners ({{ active.length }})</h2><label for="learner-search">Find a learner</label><input id="learner-search" v-model="search" type="search" placeholder="Search name or admission number" autocomplete="off"><p v-if="search.trim()">{{ visibleActive.length }} active {{ visibleActive.length === 1 ? 'learner matches' : 'learners match' }} your search.</p>
         <p v-if="!active.length">No active learners in this class.</p>
-        <ul class="roster"><li v-for="student in visibleActive" :key="student.id"><div><strong>{{ student.full_name }}</strong><small>{{ student.admission_number }}</small></div><div><button :disabled="busy || !!membershipChange" @click="editStudent(student)">Edit</button><button class="remove" :disabled="busy || dirty || !!membershipChange" @click="requestMembershipChange(student)">Remove</button></div></li></ul>
+        <ul class="roster"><li v-for="student in visibleActive" :key="student.id"><div><strong>{{ displayName(student.full_name) }}</strong><small>{{ student.admission_number }}</small></div><div><button :disabled="busy || !!membershipChange" @click="editStudent(student)">Edit</button><button class="remove" :disabled="busy || dirty || !!membershipChange" @click="requestMembershipChange(student)">Remove</button></div></li></ul>
         <h2>Removed learners ({{ removed.length }})</h2>
         <p v-if="!removed.length">No removed learners.</p>
-        <ul class="roster"><li v-for="student in visibleRemoved" :key="student.id"><div><strong>{{ student.full_name }}</strong><small>{{ student.admission_number }}</small></div><button :disabled="busy || dirty || !!membershipChange" @click="requestMembershipChange(student, true)">Restore</button></li></ul>
+        <ul class="roster"><li v-for="student in visibleRemoved" :key="student.id"><div><strong>{{ displayName(student.full_name) }}</strong><small>{{ student.admission_number }}</small></div><button :disabled="busy || dirty || !!membershipChange" @click="requestMembershipChange(student, true)">Restore</button></li></ul>
       </template>
     </template>
   </main>

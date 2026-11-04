@@ -156,7 +156,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
         <fieldset :disabled="locked">
           <legend>Assessment selection</legend>
           <div class="selectors">
-            <div><label for="class">Class</label><select id="class" v-model="classId" required @change="changeClass"><option value="">Select class</option><option v-for="item in classData?.classes" :key="item.id" :value="String(item.id)">{{ item.name }}</option></select></div>
+            <div><label for="class">Class</label><select id="class" v-model="classId" required @change="changeClass"><option value="">Select class</option><option v-for="item in classData?.classes" :key="item.id" :value="String(item.id)">{{ displayName(item.name) }}</option></select></div>
             <div><label for="area">Learning area</label><select id="area" v-model="areaId" required :disabled="!areas.length"><option value="">Select learning area</option><option v-for="area in areas" :key="area.id" :value="String(area.id)">{{ area.name }}</option></select></div>
             <div><label for="strand">Strand</label><select id="strand" v-model="strandId" required :disabled="!areaId"><option value="">Select strand</option><option v-for="strand in strands" :key="strand.id" :value="String(strand.id)">{{ strand.name }}</option></select></div>
             <div><label for="sub-strand">Sub-strand</label><select id="sub-strand" v-model="subStrandId" required :disabled="!strandId"><option value="">Select sub-strand</option><option v-for="sub in subStrands" :key="sub.id" :value="String(sub.id)">{{ sub.name }}</option></select></div>
@@ -181,9 +181,9 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
             <div class="table-scroll">
               <table class="ratings-table"><caption>Enter ratings for {{ rows.length }} learners</caption><thead><tr><th scope="col">Learner</th><th scope="col">Competency</th><th scope="col">Remarks (optional)</th></tr></thead>
                 <tbody><tr v-for="row in rows" :key="row.id">
-                  <th scope="row">{{ row.full_name }}<small>{{ row.admission_number }}</small></th>
+                  <th scope="row">{{ displayName(row.full_name) }}<small>{{ row.admission_number }}</small></th>
                   <td data-label="Competency rating"><select v-model="row.competency_level" :aria-label="`Competency for ${row.full_name}`" required><option value="">Select rating</option><option v-for="level in levels" :key="level.code" :value="level.code">{{ level.code }} — {{ level.label }}</option></select></td>
-                  <td data-label="Teacher remarks"><textarea v-model="row.remarks" :aria-label="`Remarks for ${row.full_name}`" maxlength="2000" rows="2" /></td>
+                  <td data-label="Teacher remarks"><textarea :value="displayRemark(row.remarks)" @input="row.remarks = ($event.target as HTMLTextAreaElement).value" :aria-label="`Remarks for ${row.full_name}`" maxlength="2000" rows="2" /></td>
                 </tr></tbody>
               </table>
             </div>
@@ -194,12 +194,12 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
         </form>
         <h2>Saved assessments</h2>
         <p v-if="!saved.length">No assessments have been saved for this selection yet.</p>
-        <ul v-else><li v-for="rating in saved" :key="rating.student_id">{{ learners.find(learner => learner.id === rating.student_id)?.full_name }} — <strong>{{ rating.competency_level }}</strong><span v-if="rating.remarks"> · {{ rating.remarks }}</span> <button class="history-button" :disabled="working || dirty" :aria-label="`View history for ${learners.find(learner => learner.id === rating.student_id)?.full_name}`" @click="viewHistory(rating)">View history</button></li></ul>
+        <ul v-else><li v-for="rating in saved" :key="rating.student_id">{{ learners.find(learner => learner.id === rating.student_id)?.full_name }} — <strong>{{ rating.competency_level }}</strong><span v-if="rating.remarks"> · {{ displayRemark(rating.remarks) }}</span> <button class="history-button" :disabled="working || dirty" :aria-label="`View history for ${learners.find(learner => learner.id === rating.student_id)?.full_name}`" @click="viewHistory(rating)">View history</button></li></ul>
         <section v-if="historyLearner" aria-labelledby="history-title">
-          <h2 id="history-title">Revision history: {{ historyLearner }}</h2>
+          <h2 id="history-title">Revision history: {{ displayName(historyLearner) }}</h2>
           <p>Each row preserves a saved version. A baseline records the state when history began; earlier edits cannot be reconstructed. Times below are shown in UTC.</p>
           <p v-if="!history.length">No recorded history is available yet.</p>
-          <div v-else class="table-scroll"><table><caption>{{ historyLearner }} · {{ term }}</caption><thead><tr><th scope="col">Version</th><th scope="col">Event</th><th scope="col">Rating</th><th scope="col">Remarks</th><th scope="col">Recorded (UTC)</th></tr></thead><tbody><tr v-for="revision in history" :key="revision.id"><td>{{ revision.version }}</td><td>{{ revision.event }}</td><td>{{ revision.competency_level }}</td><td>{{ revision.remarks || '—' }}</td><td><time :datetime="revision.recorded_at">{{ revision.recorded_at.replace('T', ' ').replace('.000000Z', ' UTC').replace('Z', ' UTC') }}</time></td></tr></tbody></table></div>
+          <div v-else class="table-scroll"><table><caption>{{ displayName(historyLearner) }} · {{ term }}</caption><thead><tr><th scope="col">Version</th><th scope="col">Event</th><th scope="col">Rating</th><th scope="col">Remarks</th><th scope="col">Recorded (UTC)</th></tr></thead><tbody><tr v-for="revision in history" :key="revision.id"><td>{{ revision.version }}</td><td>{{ revision.event }}</td><td>{{ revision.competency_level }}</td><td>{{ revision.remarks || '—' }}</td><td><time :datetime="revision.recorded_at">{{ revision.recorded_at.replace('T', ' ').replace('.000000Z', ' UTC').replace('Z', ' UTC') }}</time></td></tr></tbody></table></div>
         </section>
       </template>
     </template>
