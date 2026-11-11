@@ -1,0 +1,81 @@
+/* Shared motion and interaction cues for public pages and both portals. */
+:root {
+  --portal-ease: cubic-bezier(.2, .75, .25, 1);
+}
+
+@media screen {
+  .page-arrival-enter-active,
+  .workspace .report-view {
+    animation: page-arrival 240ms var(--portal-ease) both;
+  }
+
+  .workspace .workspace-role { margin-top: auto; }
+  .workspace .sidebar nav { margin-bottom: 24px; }
+  .workspace .header-emblem { margin-inline-start: auto; }
+
+  .sidebar nav a, .mobile-bottom-nav a {
+    transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .sidebar nav a svg, .mobile-bottom-nav a svg {
+    flex-shrink: 0;
+    transition: transform 180ms var(--portal-ease);
+  }
+
+  .sidebar nav a.active svg, .mobile-bottom-nav a.active svg { transform: scale(1.12); }
+  .workspace .active-dot { animation: active-indicator 220ms var(--portal-ease) both; }
+
+  .workspace .sidebar.is-open { animation: drawer-arrival 240ms var(--portal-ease) both; }
+  .workspace .drawer-backdrop { animation: backdrop-arrival 220ms ease both; }
+
+  .workspace button:active:not(:disabled), .public-shell button:active:not(:disabled),
+  .workspace .button-link:active, .public-shell .button-link:active { transform: translateY(1px); }
+
+  .workspace :is(input, select, textarea), .public-shell :is(input, select, textarea) {
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .workspace :is(input, select, textarea):focus, .public-shell :is(input, select, textarea):focus {
+    border-color: #9563cb;
+    box-shadow: 0 0 0 3px #9563cb28;
+  }
+
+  .dashboard-shortcuts a, .support-subject-list a { transition: background-color 180ms ease; }
+  .dashboard-shortcuts a:focus-visible, .support-subject-list a:focus-visible { background: #f6effc; }
+
+  .public-shell .portal-choices > a {
+    transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  }
+  .public-shell .portal-choices > a > svg { transition: transform 180ms var(--portal-ease); }
+  .public-shell .portal-choices > a:focus-visible { background: #f5edff; }
+
+  @media (hover: hover) {
+    .sidebar nav a:hover svg { transform: translateX(2px); }
+    .dashboard-shortcuts a:hover, .support-subject-list a:hover { background: #f6effc; }
+    .public-shell .portal-choices > a:hover { background: #f5edff; border-color: #cfb4e8; }
+    .public-shell .portal-choices > a:hover > svg { transform: translateX(4px); }
+  }
+}
+
+@keyframes page-arrival {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes drawer-arrival {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes backdrop-arrival {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes active-indicator {
+  from { opacity: 0; transform: scale(.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace button:active, .public-shell button:active,
+  .workspace .button-link:active, .public-shell .button-link:active,
+  .public-shell .portal-choices > a:hover > svg { transform: none; }
+}
