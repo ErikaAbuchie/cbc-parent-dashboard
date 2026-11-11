@@ -3,7 +3,7 @@ import { Chart as ChartJS, RadialLinearScale, CategoryScale, LinearScale, PointE
 import type { ChartData, ChartOptions } from 'chart.js'
 import { Radar, Line } from 'vue-chartjs'
 ChartJS.register(RadialLinearScale, CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
-const props = defineProps<{ kind: 'radar' | 'line'; labels: string[]; values: (number | null)[]; title: string }>()
+const props = defineProps<{ kind: 'radar' | 'line'; labels: string[]; values: (number | null)[]; title: string; overview?: boolean }>()
 const chartView = ref<{ chart?: { resize: (width?: number, height?: number) => void } } | null>(null)
 const { scale: textScale } = usePortalTextSize()
 const printing = ref(false)
@@ -16,7 +16,7 @@ const radarData = computed<ChartData<'radar'>>(() => ({ labels: props.labels.fil
   borderColor: '#9155c9', backgroundColor: 'rgba(145, 85, 201, .16)', pointBackgroundColor: '#9155c9', pointRadius: 4, borderWidth: 2 }] }))
 const lineData = computed<ChartData<'line'>>(() => ({ labels: props.labels, datasets: [{ label: props.title, data: props.values,
   borderColor: '#9155c9', backgroundColor: 'rgba(145, 85, 201, .10)', pointBackgroundColor: '#9155c9', pointRadius: 5,
-  pointHoverRadius: 7, borderWidth: 2.5, tension: 0, spanGaps: false, fill: false }] }))
+  pointHoverRadius: 7, borderWidth: 2.5, tension: props.overview ? 0.25 : 0, spanGaps: false, fill: props.overview ? 'origin' : false }] }))
 const radarOptions = computed<ChartOptions<'radar'>>(() => ({ responsive: true, maintainAspectRatio: false, animation: false,
   plugins: { legend: { display: false }, tooltip: { titleFont: { size: 15 * chartFontScale.value }, bodyFont: { size: 14 * chartFontScale.value }, callbacks: { label: context => `${context.dataset.label}: ${Number(context.raw).toFixed(2)} / 4` } } },
   scales: { r: { min: 1, max: 4, ticks: { stepSize: 1, backdropColor: 'transparent', color: '#60516e', font: { size: 14 * chartFontScale.value } },
@@ -27,5 +27,5 @@ const lineOptions = computed<ChartOptions<'line'>>(() => ({ responsive: true, ma
     x: { grid: { display: false }, ticks: { color: '#60516e', font: { size: 14 * chartFontScale.value } } } } }))
 </script>
 
-<template><div class="chart-canvas"><Radar v-if="kind === 'radar'" ref="chartView" :data="radarData" :options="radarOptions" role="img" :aria-label="title" /><Line v-else ref="chartView" :data="lineData" :options="lineOptions" role="img" :aria-label="title" /></div></template>
-<style scoped>.chart-canvas { position: relative; height: 320px; width: 100%; min-width: 0; }@media(max-width:480px) { .chart-canvas { height: 290px; } }@media print { .chart-canvas { height: 260px; } }</style>
+<template><div class="chart-canvas" :class="{ 'chart-canvas-overview': overview }"><Radar v-if="kind === 'radar'" ref="chartView" :data="radarData" :options="radarOptions" role="img" :aria-label="title" /><Line v-else ref="chartView" :data="lineData" :options="lineOptions" role="img" :aria-label="title" /></div></template>
+<style scoped>.chart-canvas { position: relative; height: 320px; width: 100%; min-width: 0; }@media(max-width:480px) { .chart-canvas { height: 290px; } }.chart-canvas-overview { height: 230px; }@media print { .chart-canvas { height: 260px; } }</style>
