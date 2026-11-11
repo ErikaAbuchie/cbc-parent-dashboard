@@ -1,106 +1,188 @@
 <script setup lang="ts">
-type Explanation = { source: 'model' | 'fallback' | 'empty'; fallback_reason?: string; model: string | null; summary: string; activity: string; level_guide: { code: string; count: number; meaning: string }[] }
-function fallbackMessage(value: Explanation) {
-  if (value.source !== 'fallback') return ''
-  return ({ memory: 'The AI service ran out of memory. Please ask the school administrator to check the AI setup.', timeout: 'The AI took too long. Please try again shortly.', connection: 'The app could not connect to the AI service.', disabled: 'AI is switched off in the server settings.', provider_error: 'The AI service could not process this request.', incomplete_response: 'The AI response was incomplete. Please try again.' } as Record<string, string>)[value.fallback_reason || ''] || 'The AI did not return a usable explanation. Please try again.'
-}
-type Subject = { id: number; name: string; strands: { id: number; name: string;
-  sub_strands: { id: number; name: string; competency_level: string }[] }[] }
+import { homeActivity } from '../utils/homeActivities'
+
+type Topic = { id: number; name: string; competency_level: string }
+type Strand = { id: number; name: string; sub_strands: Topic[] }
+type Subject = { id: number; name: string; strands: Strand[] }
+type Level = 'EE' | 'ME' | 'AE' | 'BE'
+
 const props = defineProps<{ subjects: Subject[] }>()
-const result = ref<Explanation | null>(null)
-const tips = ref<Explanation | null>(null)
+const language = ref<'en' | 'sw'>('en')
+const showSummary = ref(false)
+const showTips = ref(false)
 const subjectId = ref('')
 const strandId = ref('')
-const strands = computed(() => props.subjects.find(s => String(s.id) === subjectId.value)?.strands || [])
-const tipTitle = ref('')
-const loading = ref<'' | 'summary' | 'home_tips'>('')
-const message = ref('')
-const tipsPanel = ref<HTMLElement | null>(null)
-const tipsButton = ref<HTMLButtonElement | null>(null)
-const subjectGuidance = computed(() => props.subjects.map(subject => {
-  const strandResults = subject.strands.map(strand => {
-    const topics = strand.sub_strands
-    const support = topics.filter(topic => ['AE', 'BE'].includes(topic.competency_level))
-      .sort((a, b) => Number(b.competency_level === 'BE') - Number(a.competency_level === 'BE'))
-    const meeting = topics.filter(topic => ['ME', 'EE'].includes(topic.competency_level)).length
-    return { ...strand, support, meeting, total: topics.length }
-  })
-  return { ...subject, strandResults, focus: strandResults.filter(strand => strand.support.length).map(strand => strand.name) }
-}))
-async function chooseForTips(subject: number, strand: number) {
-  if (loading.value) return
-  subjectId.value = String(subject)
-  await nextTick()
-  strandId.value = String(strand)
-  await nextTick()
-  tipsPanel.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  tipsButton.value?.focus({ preventScroll: true })
+const levels: Level[] = ['EE', 'ME', 'AE', 'BE']
+
+const copy = {
+  en: {
+    title: 'Understand and support your learner', language: 'Guidance language',
+    summary: 'Understand the results', showSummary: 'Explain these results',
+    guide: 'What the ratings mean', results: 'Recorded results by subject and strand',
+    details: 'See individual ratings', supportHeading: 'Strands that could use more practice',
+    noSupport: 'All assessed skills meet or exceed expectations.',
+    approaching: (skills: string) => `Your child is close to the expected level in ${skills}. Practise these skills to build confidence.`,
+    support: (skills: string) => `Start with ${skills}. Your child is below the expected level in these skills and may benefit from a worked example and guided practice.`,
+    ratingCount: (count: number) => `Assessed skills (${count})`,
+    context: { EE: 'Your child went beyond what was expected on this skill. Try a small challenge to build on that strength.', ME: 'Your child showed what was expected on this skill. Try a new example to check they can use it in a different situation.', AE: 'Your child is close to what was expected on this skill. Practise one example together, then let them try one on their own.', BE: 'Your child needs more help with this skill. Show one simple example first, then guide them through another.' },
+    tips: 'Help at home', subject: 'Subject', strand: 'Strand', showTips: 'Get home tips',
+    empty: 'There are no recorded ratings for this selection.',
+    source: 'Guidance based on recorded teacher ratings',
+    note: 'Subject and skill names appear as recorded in the report.',
+    meanings: { EE: 'Exceeding expectations', ME: 'Meeting expectations', AE: 'Approaching expectations', BE: 'Below expectations' },
+    practice: (skill: string) => `Find a worked example of “${skill}” in your child’s schoolbook. Go through it together and ask your child to explain one step. Let them try a similar example, then check it together. If you cannot find an example, ask the teacher to suggest one.`,
+    extend: (skill: string) => `Ask your child to show you an example of “${skill}” from school. Ask them to make a new example and explain how they know it is correct.`,
+  },
+  sw: {
+    title: 'Elewa matokeo na umsaidie mtoto wako', language: 'Lugha ya mwongozo',
+    summary: 'Elewa matokeo', showSummary: 'Eleza matokeo haya',
+    guide: 'Maana ya viwango', results: 'Matokeo yaliyorekodiwa kwa kila somo na mada',
+    details: 'Angalia kiwango cha kila stadi', supportHeading: 'Mada zinazohitaji mazoezi zaidi',
+    noSupport: 'Katika stadi zote zilizotathminiwa, mtoto wako amefikia au amezidi kiwango kinachotarajiwa.',
+    approaching: (skills: string) => `Mtoto wako anakaribia kiwango kinachotarajiwa katika stadi hizi: ${skills}. Mazoezi zaidi yanaweza kumsaidia.`,
+    support: (skills: string) => `Anzeni na stadi hizi: ${skills}. Mtoto wako bado hajafikia kiwango kinachotarajiwa. Mwonyeshe mfano, kisha msaidie kujaribu mwingine.`,
+    ratingCount: (count: number) => `Stadi zilizotathminiwa (${count})`,
+    context: { EE: 'Mtoto wako amezidi kiwango kilichotarajiwa katika stadi hii. Mpe zoezi lenye changamoto kidogo.', ME: 'Mtoto wako amefikia kiwango kilichotarajiwa katika stadi hii. Mpe mfano mpya ili uone kama anaweza kutumia stadi hiyo katika hali tofauti.', AE: 'Mtoto wako anakaribia kiwango kinachotarajiwa katika stadi hii. Fanyeni mfano mmoja pamoja, kisha mwache ajaribu mwingine peke yake.', BE: 'Mtoto wako anahitaji msaada zaidi katika stadi hii. Mwonyeshe mfano mmoja rahisi kwanza, kisha mwongoze katika mfano mwingine.' },
+    tips: 'Mazoezi ya nyumbani', subject: 'Somo', strand: 'Mada', showTips: 'Pata mapendekezo ya mazoezi',
+    empty: 'Hakuna matokeo yaliyorekodiwa kwa chaguo hili.',
+    source: 'Mwongozo unatokana na viwango vilivyorekodiwa na mwalimu',
+    note: 'Majina ya masomo na stadi yameandikwa kama yalivyo kwenye ripoti.',
+    meanings: { EE: 'Amezidi kiwango kinachotarajiwa', ME: 'Amefikia kiwango kinachotarajiwa', AE: 'Anakaribia kiwango kinachotarajiwa', BE: 'Bado hajafikia kiwango kinachotarajiwa' },
+    practice: (skill: string) => `Tafuta mfano uliofanyiwa kazi wa “${skill}” katika kitabu cha mtoto wako. Pitieni mfano huo pamoja na umwombe aeleze hatua moja. Mwache ajaribu mfano mwingine unaofanana, kisha kagueni jibu pamoja. Usipopata mfano, mwombe mwalimu akupendekezee mmoja.`,
+    extend: (skill: string) => `Mwombe mtoto wako akuonyeshe mfano wa “${skill}” kutoka shuleni. Mwombe atoe mfano mwingine na aeleze jinsi anavyojua kuwa ni sahihi.`,
+  },
 }
-watch(() => props.subjects, subjects => {
-  if (!subjects.some(s => String(s.id) === subjectId.value)) subjectId.value = String(subjects[0]?.id || '')
+const t = computed(() => copy[language.value])
+function assessed(topic: Topic): topic is Topic & { competency_level: Level } {
+  return levels.some(level => level === topic.competency_level)
+}
+const subjects = computed(() => props.subjects.map(subject => ({
+  ...subject,
+  strands: subject.strands.map(strand => ({
+    ...strand, sub_strands: strand.sub_strands.filter(assessed),
+  })).filter(strand => strand.sub_strands.length),
+})).filter(subject => subject.strands.length))
+function ratingBreakdown(topics: Topic[]) {
+  return levels.map(level => `${level} ${topics.filter(topic => topic.competency_level === level).length}`).join(' · ')
+}
+function supportReason(topics: Topic[]) {
+  const format = new Intl.ListFormat(language.value, { type: 'conjunction' })
+  const names = (level: Level) => format.format(topics.filter(topic => topic.competency_level === level).map(topic => topic.name))
+  const below = names('BE')
+  const approaching = names('AE')
+  return [below && t.value.support(below), approaching && t.value.approaching(approaching)].filter(Boolean).join(' ')
+}
+const supportStrands = computed(() => subjects.value.flatMap(subject => subject.strands
+  .map(strand => ({ id: strand.id, subject: subject.name, strand: strand.name, reason: supportReason(strand.sub_strands) }))
+  .filter(strand => strand.reason)))
+const strands = computed(() => subjects.value.find(subject => String(subject.id) === subjectId.value)?.strands ?? [])
+const selectedStrand = computed(() => strands.value.find(strand => String(strand.id) === strandId.value))
+const focus = computed(() => {
+  const topics = selectedStrand.value?.sub_strands ?? []
+  for (const level of ['BE', 'AE', 'ME', 'EE']) {
+    const topic = topics.find(item => item.competency_level === level)
+    if (topic) return topic
+  }
+  return undefined
+})
+const activity = computed(() => {
+  const topic = focus.value
+  if (!topic) return ''
+  const subject = subjects.value.find(item => String(item.id) === subjectId.value)
+  const specificActivity = homeActivity(subject?.name ?? '', topic.name, language.value)
+  if (specificActivity) return specificActivity
+  if (topic.competency_level === 'EE' || topic.competency_level === 'ME') return t.value.extend(topic.name)
+  return t.value.practice(topic.name)
+})
+watch(subjects, values => {
+  if (!values.some(subject => String(subject.id) === subjectId.value)) {
+    subjectId.value = String(values[0]?.id ?? '')
+  }
 }, { immediate: true })
-watch(strands, values => { strandId.value = String(values[0]?.id || ''); tips.value = null }, { immediate: true })
-watch(strandId, () => { tips.value = null; message.value = '' })
-let cancelled = false
-onBeforeUnmount(() => { cancelled = true })
-async function explain(mode: 'summary' | 'home_tips') {
-  if (loading.value || (mode === 'home_tips' && (!subjectId.value || !strandId.value))) return
-  loading.value = mode; message.value = ''
-  const selectedSubject = subjectId.value
-  const selectedStrand = strandId.value
-  const title = `${props.subjects.find(s => String(s.id) === selectedSubject)?.name} · ${strands.value.find(s => String(s.id) === selectedStrand)?.name}`
-  try {
-    const response = await $fetch<Explanation>('/api/parent/explanation', { method: 'POST', timeout: 145000,
-      body: mode === 'summary' ? { mode } : { mode, subject_id: Number(selectedSubject), strand_id: Number(selectedStrand) } })
-    if (cancelled) return
-    if (mode === 'summary') result.value = response
-    else if (selectedSubject === subjectId.value && selectedStrand === strandId.value) { tips.value = response; tipTitle.value = title }
-  } catch (error: any) {
-    if (cancelled) return
-    if (error.statusCode === 401 || error.response?.status === 401) { await navigateTo('/parent/login', { replace: true }); return }
-    message.value = error.data?.statusMessage || 'Guidance is unavailable. You can still read the results and teacher remarks.'
-  } finally { loading.value = '' }
-}
+watch(strands, values => {
+  if (!values.some(strand => String(strand.id) === strandId.value)) {
+    strandId.value = String(values[0]?.id ?? '')
+  }
+  showTips.value = false
+}, { immediate: true })
+watch(strandId, () => { showTips.value = false })
 </script>
+
 <template>
-  <section class="explanation" aria-labelledby="explanation-heading" :aria-busy="!!loading">
-    <span class="eyebrow">SUPPORT FOR PARENTS</span><h2 id="explanation-heading">Understand and support your learner</h2>
-    <p class="controls">Choose an explanation or home practice tips. Each request may take up to two minutes.</p>
+  <section class="explanation" :lang="language" aria-labelledby="explanation-heading">
+    <h2 id="explanation-heading">{{ t.title }}</h2>
+    <div class="controls">
+      <label for="guidance-language">{{ t.language }}</label>
+      <select id="guidance-language" v-model="language">
+        <option value="en" lang="en">English</option>
+        <option value="sw" lang="sw">Kiswahili</option>
+      </select>
+    </div>
+    <p class="note">{{ t.note }}</p>
     <div class="ai-grid">
-      <section class="ai-card" aria-labelledby="summary-heading"><h3 id="summary-heading">1. Explain the grades simply</h3><p>Understand the rating letters and see which subjects and strands to focus on at home.</p>
-        <button class="controls" type="button" :disabled="!!loading" @click="explain('summary')">{{ loading === 'summary' ? 'Explaining…' : 'Explain these results' }}</button>
-        <div v-if="result" aria-live="polite"><h4>The rating letters</h4><ul><li v-for="level in result.level_guide" :key="level.code"><strong>{{ level.code }}</strong> — {{ level.meaning }} <span class="count">({{ level.count }} assessed topics)</span></li></ul>
-          <h4>Your learner’s results</h4><p>Use the subject and strand names below to choose home tips. This breakdown comes directly from the recorded topic ratings.</p>
-          <details v-for="subject in subjectGuidance" :key="subject.id" class="subject-guidance"><summary>{{ subject.name }} <span class="count">{{ subject.focus.length ? 'Strands to practise: ' + subject.focus.join(', ') : 'Recorded topics meeting or exceeding expectations' }}</span></summary>
-            <p v-if="subject.focus.length">For {{ subject.name }}, focus home practice on <strong>{{ subject.focus.join(', ') }}</strong>. The strand details below show which topics need help.</p>
-            <p v-else>The topics recorded for {{ subject.name }} are meeting or exceeding expectations. You can use home tips for extra challenges.</p>
-            <section v-for="strand in subject.strandResults" :key="strand.id" class="strand-guidance"><h5>{{ strand.name }}</h5><p>{{ strand.meeting }} of {{ strand.total }} recorded topics are meeting or exceeding expectations.</p>
-              <template v-if="strand.support.length"><p>Practise these topics in {{ strand.name }}:</p><ul><li v-for="topic in strand.support" :key="topic.id"><strong>{{ topic.name }}</strong> — {{ topic.competency_level === 'BE' ? 'needs more help (BE)' : 'needs some help and practice (AE)' }}.</li></ul></template>
-              <p v-else>All recorded topics in this strand are meeting or exceeding expectations. Try an extension activity together.</p>
-              <button class="controls strand-tip-button" type="button" :disabled="!!loading" :aria-label="`Choose ${subject.name}, ${strand.name} for home tips`" @click="chooseForTips(subject.id, strand.id)">Choose for home tips →</button>
-            </section>
-          </details>
-          <p class="count">These statements cover assessed topics only. They do not assign a new overall subject or strand grade.</p>
-          <h4>Overall explanation</h4><p class="source">{{ result.source === 'model' ? 'AI-generated explanation' : result.source === 'empty' ? 'No results to explain' : 'Standard explanation · AI unavailable' }}</p><p class="generated-text">{{ result.summary }}</p>
+      <section class="ai-card" aria-labelledby="summary-heading">
+        <h3 id="summary-heading">{{ t.summary }}</h3>
+        <button class="controls" type="button" @click="showSummary = true">{{ t.showSummary }}</button>
+        <div v-if="showSummary" aria-live="polite">
+          <h4>{{ t.guide }}</h4>
+          <ul><li v-for="level in levels" :key="level"><strong>{{ level }}</strong> — {{ t.meanings[level] }}</li></ul>
+          <h4>{{ t.results }}</h4>
+          <p v-if="!subjects.length">{{ t.empty }}</p>
+          <section v-for="subject in subjects" :key="subject.id" class="subject-guidance">
+            <h5>{{ subject.name }}</h5>
+            <p>{{ t.ratingCount(subject.strands.flatMap(strand => strand.sub_strands).length) }} · {{ ratingBreakdown(subject.strands.flatMap(strand => strand.sub_strands)) }}</p>
+            <details v-for="strand in subject.strands" :key="strand.id" class="strand-summary">
+              <summary>{{ strand.name }} · {{ ratingBreakdown(strand.sub_strands) }}</summary>
+              <p>{{ t.details }}</p>
+              <ul>
+                <li v-for="topic in strand.sub_strands" :key="topic.id">
+                  {{ topic.name }} · <strong>{{ topic.competency_level }}</strong> — {{ t.meanings[topic.competency_level] }}
+                </li>
+              </ul>
+            </details>
+          </section>
+          <section v-if="subjects.length" class="support-subjects">
+            <h4>{{ t.supportHeading }}</h4>
+            <p v-if="!supportStrands.length">{{ t.noSupport }}</p>
+            <ul v-else>
+              <li v-for="strand in supportStrands" :key="strand.id">
+                <strong>{{ strand.subject }} · {{ strand.strand }}</strong>
+                <p>{{ strand.reason }}</p>
+              </li>
+            </ul>
+          </section>
         </div>
       </section>
-      <section ref="tipsPanel" class="ai-card" aria-labelledby="tips-heading"><h3 id="tips-heading">2. Help at home</h3><p>Pick a subject and strand to get short activities based on your learner’s recorded results.</p>
-        <div class="controls"><label for="tips-subject">Subject</label><select id="tips-subject" v-model="subjectId" :disabled="!!loading || !subjects.length"><option v-for="subject in subjects" :key="subject.id" :value="String(subject.id)">{{ subject.name }}</option></select>
-        <label for="tips-strand">Strand</label><select id="tips-strand" v-model="strandId" :disabled="!!loading || !strands.length"><option v-for="strand in strands" :key="strand.id" :value="String(strand.id)">{{ strand.name }}</option></select>
-        <button ref="tipsButton" type="button" :disabled="!!loading || !subjectId || !strandId" @click="explain('home_tips')">{{ loading === 'home_tips' ? 'Preparing home tips…' : 'Get home tips' }}</button></div>
-        <div v-if="tips" aria-live="polite"><h4>{{ tipTitle }}</h4><p class="source">{{ tips.source === 'model' ? 'AI-generated home tips' : 'General practice guidance · AI unavailable' }}</p><p class="generated-text">{{ tips.summary }}</p><h4>Try this together</h4><p class="generated-text">{{ tips.activity }}</p></div>
+      <section class="ai-card" aria-labelledby="tips-heading">
+        <h3 id="tips-heading">{{ t.tips }}</h3>
+        <div class="controls">
+          <label for="tips-subject">{{ t.subject }}</label>
+          <select id="tips-subject" v-model="subjectId" :disabled="!subjects.length">
+            <option v-for="subject in subjects" :key="subject.id" :value="String(subject.id)">{{ subject.name }}</option>
+          </select>
+          <label for="tips-strand">{{ t.strand }}</label>
+          <select id="tips-strand" v-model="strandId" :disabled="!strands.length">
+            <option v-for="strand in strands" :key="strand.id" :value="String(strand.id)">{{ strand.name }}</option>
+          </select>
+          <button type="button" :disabled="!focus" @click="showTips = true">{{ t.showTips }}</button>
+        </div>
+        <p v-if="!focus">{{ t.empty }}</p>
+        <div v-if="showTips && focus" aria-live="polite">
+          <p class="source">{{ t.source }}</p>
+          <h4>{{ focus.name }}</h4>
+          <p><strong>{{ focus.competency_level }}</strong> — {{ t.meanings[focus.competency_level] }}</p>
+          <p>{{ t.context[focus.competency_level] }}</p>
+          <p>{{ activity }}</p>
+        </div>
       </section>
     </div>
-    <p v-if="result && fallbackMessage(result)" role="status">Summary: {{ fallbackMessage(result) }} Standard guidance is shown above.</p>
-    <p v-if="tips && fallbackMessage(tips)" role="status">Home tips: {{ fallbackMessage(tips) }} Standard guidance is shown above.</p>
-    <p v-if="loading" class="controls" role="status">Preparing guidance. You can still read the report below.</p><p v-if="message" class="error controls" role="alert">{{ message }}</p>
-    <p class="note">AI suggestions may be inaccurate and cannot guarantee a higher grade. The teacher’s ratings and remarks remain the source of truth. Ask the teacher if guidance does not match the results.</p>
   </section>
 </template>
+
 <style scoped>
 .explanation{margin:24px 0;padding:24px;border:1px solid #dce6e2;border-radius:16px;background:#f4f9f5}h2{margin-top:10px}.ai-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.ai-card{min-width:0;background:white;border:1px solid #dfebe3;border-radius:12px;padding:22px}.ai-card h3{margin-top:0}.ai-card p,li{line-height:1.7;font-size:14px}li{margin-bottom:10px}ul{padding-left:20px}.generated-text{white-space:pre-wrap;overflow-wrap:anywhere}.source,.count{font-size:12px;color:#536e60}.source{margin-top:22px;font-weight:650}.note{font-size:12px;line-height:1.6;margin-bottom:0}.ai-card button{margin-top:12px}.ai-card select{margin-bottom:14px}@media(max-width:850px){.ai-grid{grid-template-columns:1fr}}@media(max-width:480px){.explanation{padding:18px 12px}.ai-card{padding:18px 14px}.ai-card button{width:100%}}@media print{.controls{display:none!important}.ai-grid{display:block}.ai-card{break-inside:avoid;margin-bottom:14px}.explanation{background:white;border-color:#999}h2,h3,h4{break-after:avoid}}
 </style>
 
 <style scoped>
-.subject-guidance{border:1px solid #d9e6dd;border-radius:10px;margin:12px 0;padding:12px}.subject-guidance>summary{cursor:pointer;font-weight:700;line-height:1.6;overflow-wrap:anywhere}.subject-guidance>summary .count{display:block;font-weight:400;margin-left:15px}.strand-guidance{padding:12px 0;border-top:1px solid #e3ece6}.strand-guidance h5{font-size:15px;margin:8px 0}.strand-guidance p{margin:8px 0}.strand-tip-button{background:#e5f4eb;color:#145c46;border:1px solid #bddcc9;padding:9px 12px;font-size:13px}.ai-grid{align-items:start}.ai-card{scroll-margin-top:24px}@media print{.subject-guidance{break-inside:avoid}}
+.subject-guidance{border-bottom:1px solid #d9e6dd;margin:16px 0;padding:4px 0 12px}.subject-guidance h5{font-size:16px;margin:8px 0}.strand-summary{margin:12px 0;color:#385b49}.support-subjects{background:#f0f6ed;border:1px solid #d5e4cf;border-radius:10px;padding:16px;margin:20px 0}.support-subjects h4{margin-top:0}.ai-grid{align-items:start}@media print{.subject-guidance{break-inside:avoid}.support-subjects{background:white}}
 </style>
