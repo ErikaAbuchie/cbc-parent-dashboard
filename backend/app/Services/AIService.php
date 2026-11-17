@@ -22,11 +22,27 @@ class AIService
             return $fallback;
         }
 
-        $hasSupport = count(array_intersect(array_column($ratings, 'competency_level'), ['AE', 'BE'])) > 0;
+        // Match the portal's priority for choosing a sub-strand in this strand.
+        $levels = array_intersect(['BE', 'AE', 'ME', 'EE'], array_column($ratings, 'competency_level'));
+        $focusLevel = reset($levels);
+        $hasSupport = in_array($focusLevel, ['AE', 'BE'], true);
         $home = $mode === 'home_tips';
+        if ($home && $focusLevel === false) {
+            return $fallback;
+        }
         $source = match (true) {
-            $home && $language === 'sw' => 'Fanyeni zoezi lililo hapa chini pamoja. Mwombe mtoto wako aeleze kwa maneno yake alichofanya.',
-            $home => 'Try the activity below together. Ask your child to explain what they did in their own words.',
+            $home && $language === 'sw' => match ($focusLevel) {
+                'EE' => 'Zoezi hili litampa mtoto wako changamoto ndogo ili aendeleze stadi anayoimudu vizuri.',
+                'ME' => 'Zoezi hili litamsaidia mtoto wako kutumia nyumbani alichojifunza darasani.',
+                'AE' => 'Anzeni zoezi hili pamoja ili mtoto wako ajenge kujiamini katika stadi hii.',
+                'BE' => 'Mwonyeshe mtoto wako jinsi ya kuanza zoezi hili, kisha mwongoze anapolijaribu.',
+            },
+            $home => match ($focusLevel) {
+                'EE' => 'This activity gives your child a small challenge to build on what they already do well.',
+                'ME' => 'This activity helps your child use what they learned in class at home.',
+                'AE' => 'Start this activity together so your child can build confidence with the skill.',
+                'BE' => 'Show your child how to start this activity, then guide them as they try it.',
+            },
             $hasSupport && $language === 'sw' => 'Ripoti inaonyesha jinsi mtoto wako anavyofanya katika kila somo na mada ambazo anahitaji kuzifanyia mazoezi zaidi.',
             $hasSupport => 'The report shows how your child is doing in each subject and which topics could use more practice.',
             $language === 'sw' => 'Ripoti inaonyesha jinsi mtoto wako anavyofanya katika kila somo. Katika mada zilizotathminiwa, mtoto wako amefikia au amezidi matarajio.',
@@ -43,7 +59,7 @@ class AIService
                 'stream' => false,
                 'format' => $schema,
                 'keep_alive' => '5m',
-                'system' => "Rewrite the supplied introduction in everyday {$targetLanguage} for a parent. Keep its meaning. Use one or two short sentences. Do not add grades, numbers, topic names, suggested activities or new facts. Return only the introduction in the requested JSON format.",
+                'system' => "Rewrite the supplied introduction in everyday {$targetLanguage} for a parent. Keep its meaning. Use one short sentence for a home activity or up to two short sentences for a report summary. Do not add grades, numbers, topic names, suggested activities or new facts. Return only the introduction in the requested JSON format.",
                 'prompt' => $source,
                 'options' => ['temperature' => 0, 'num_ctx' => 2048, 'num_predict' => 160],
             ]);

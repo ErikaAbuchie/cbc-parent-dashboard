@@ -28,13 +28,17 @@ const copy = {
     approaching: (skills: string) => `Your child is close to the expected level in ${skills}. Practise these skills to build confidence.`,
     support: (skills: string) => `Start with ${skills}. Your child is below the expected level in these skills and may benefit from a worked example and guided practice.`,
     ratingCount: (count: number) => `Assessed skills (${count})`,
-    context: { EE: 'Your child went beyond what was expected on this skill. Try a small challenge to build on that strength.', ME: 'Your child showed what was expected on this skill. Try a new example to check they can use it in a different situation.', AE: 'Your child is close to what was expected on this skill. Practise one example together, then let them try one on their own.', BE: 'Your child needs more help with this skill. Show one simple example first, then guide them through another.' },
+    context: {
+      EE: 'This activity gives your child a small challenge to build on what they already do well.',
+      ME: 'This activity helps your child use what they learned in class at home.',
+      AE: 'Start this activity together so your child can build confidence with the skill.',
+      BE: 'Show your child how to start this activity, then guide them as they try it.',
+    },
     tips: 'Help at home', subject: 'Subject', strand: 'Strand', showTips: 'Get home tips',
     empty: 'There are no recorded ratings for this selection.',
     source: 'Guidance based on recorded teacher ratings',
     summaryIntro: 'The report shows how your child is doing in each subject and which topics could use more practice.',
     noSupportIntro: 'The report shows how your child is doing in each subject. The assessed topics meet or exceed expectations.',
-    tipsIntro: 'Try the activity below together. Ask your child to explain what they did in their own words.',
     preparing: 'Preparing an AI introduction…',
     modelIntro: 'Introduction written with AI',
     note: 'Subject and skill names appear as recorded in the report.',
@@ -51,13 +55,17 @@ const copy = {
     approaching: (skills: string) => `Mtoto wako anakaribia kiwango kinachotarajiwa katika stadi hizi: ${skills}. Mazoezi zaidi yanaweza kumsaidia.`,
     support: (skills: string) => `Anzeni na stadi hizi: ${skills}. Mtoto wako bado hajafikia kiwango kinachotarajiwa. Mwonyeshe mfano, kisha msaidie kujaribu mwingine.`,
     ratingCount: (count: number) => `Stadi zilizotathminiwa (${count})`,
-    context: { EE: 'Mtoto wako amezidi kiwango kilichotarajiwa katika stadi hii. Mpe zoezi lenye changamoto kidogo.', ME: 'Mtoto wako amefikia kiwango kilichotarajiwa katika stadi hii. Mpe mfano mpya ili uone kama anaweza kutumia stadi hiyo katika hali tofauti.', AE: 'Mtoto wako anakaribia kiwango kinachotarajiwa katika stadi hii. Fanyeni mfano mmoja pamoja, kisha mwache ajaribu mwingine peke yake.', BE: 'Mtoto wako anahitaji msaada zaidi katika stadi hii. Mwonyeshe mfano mmoja rahisi kwanza, kisha mwongoze katika mfano mwingine.' },
+    context: {
+      EE: 'Zoezi hili litampa mtoto wako changamoto ndogo ili aendeleze stadi anayoimudu vizuri.',
+      ME: 'Zoezi hili litamsaidia mtoto wako kutumia nyumbani alichojifunza darasani.',
+      AE: 'Anzeni zoezi hili pamoja ili mtoto wako ajenge kujiamini katika stadi hii.',
+      BE: 'Mwonyeshe mtoto wako jinsi ya kuanza zoezi hili, kisha mwongoze anapolijaribu.',
+    },
     tips: 'Mazoezi ya nyumbani', subject: 'Somo', strand: 'Mada', showTips: 'Pata mapendekezo ya mazoezi',
     empty: 'Hakuna matokeo yaliyorekodiwa kwa chaguo hili.',
     source: 'Mwongozo unatokana na viwango vilivyorekodiwa na mwalimu',
     summaryIntro: 'Ripoti inaonyesha jinsi mtoto wako anavyofanya katika kila somo na mada ambazo anahitaji kuzifanyia mazoezi zaidi.',
     noSupportIntro: 'Ripoti inaonyesha jinsi mtoto wako anavyofanya katika kila somo. Katika mada zilizotathminiwa, mtoto wako amefikia au amezidi matarajio.',
-    tipsIntro: 'Fanyeni zoezi lililo hapa chini pamoja. Mwombe mtoto wako aeleze kwa maneno yake alichofanya.',
     preparing: 'Utangulizi wa AI unaandaliwa…',
     modelIntro: 'Utangulizi umeandikwa kwa msaada wa AI',
     note: 'Majina ya masomo na stadi yameandikwa kama yalivyo kwenye ripoti.',
@@ -244,8 +252,7 @@ onBeforeUnmount(() => {
           <p class="source">{{ t.source }}</p>
           <h4>{{ focus.name }}</h4>
           <p><strong>{{ focus.competency_level }}</strong> — {{ t.meanings[focus.competency_level] }}</p>
-          <p>{{ t.context[focus.competency_level] }}</p>
-          <p>{{ introductions.home_tips || t.tipsIntro }}</p>
+          <p>{{ introductions.home_tips || t.context[focus.competency_level] }}</p>
           <p v-if="pending.home_tips || introductions.home_tips" class="note">{{ pending.home_tips ? t.preparing : t.modelIntro }}</p>
           <p>{{ activity }}</p>
         </div>
