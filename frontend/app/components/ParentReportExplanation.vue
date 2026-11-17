@@ -5,6 +5,7 @@ type Topic = { id: number; name: string; competency_level: string }
 type Strand = { id: number; name: string; sub_strands: Topic[] }
 type Subject = { id: number; name: string; strands: Strand[] }
 type Level = 'EE' | 'ME' | 'AE' | 'BE'
+type GuidanceMode = 'summary' | 'home_tips'
 
 const props = defineProps<{ subjects: Subject[] }>()
 const language = ref<'en' | 'sw'>('en')
@@ -13,6 +14,9 @@ const showTips = ref(false)
 const subjectId = ref('')
 const strandId = ref('')
 const levels: Level[] = ['EE', 'ME', 'AE', 'BE']
+const introductions = reactive({ summary: '', home_tips: '' })
+const pending = reactive({ summary: false, home_tips: false })
+const requests: Partial<Record<GuidanceMode, AbortController>> = {}
 
 const copy = {
   en: {
@@ -28,6 +32,11 @@ const copy = {
     tips: 'Help at home', subject: 'Subject', strand: 'Strand', showTips: 'Get home tips',
     empty: 'There are no recorded ratings for this selection.',
     source: 'Guidance based on recorded teacher ratings',
+    summaryIntro: 'The report shows how your child is doing in each subject and which topics could use more practice.',
+    noSupportIntro: 'The report shows how your child is doing in each subject. The assessed topics meet or exceed expectations.',
+    tipsIntro: 'Try the activity below together. Ask your child to explain what they did in their own words.',
+    preparing: 'Preparing an AI introduction…',
+    modelIntro: 'Introduction written with AI',
     note: 'Subject and skill names appear as recorded in the report.',
     meanings: { EE: 'Exceeding expectations', ME: 'Meeting expectations', AE: 'Approaching expectations', BE: 'Below expectations' },
     practice: (skill: string) => `Find a worked example of “${skill}” in your child’s schoolbook. Go through it together and ask your child to explain one step. Let them try a similar example, then check it together. If you cannot find an example, ask the teacher to suggest one.`,
@@ -46,6 +55,11 @@ const copy = {
     tips: 'Mazoezi ya nyumbani', subject: 'Somo', strand: 'Mada', showTips: 'Pata mapendekezo ya mazoezi',
     empty: 'Hakuna matokeo yaliyorekodiwa kwa chaguo hili.',
     source: 'Mwongozo unatokana na viwango vilivyorekodiwa na mwalimu',
+    summaryIntro: 'Ripoti inaonyesha jinsi mtoto wako anavyofanya katika kila somo na mada ambazo anahitaji kuzifanyia mazoezi zaidi.',
+    noSupportIntro: 'Ripoti inaonyesha jinsi mtoto wako anavyofanya katika kila somo. Katika mada zilizotathminiwa, mtoto wako amefikia au amezidi matarajio.',
+    tipsIntro: 'Fanyeni zoezi lililo hapa chini pamoja. Mwombe mtoto wako aeleze kwa maneno yake alichofanya.',
+    preparing: 'Utangulizi wa AI unaandaliwa…',
+    modelIntro: 'Utangulizi umeandikwa kwa msaada wa AI',
     note: 'Majina ya masomo na stadi yameandikwa kama yalivyo kwenye ripoti.',
     meanings: { EE: 'Amezidi kiwango kinachotarajiwa', ME: 'Amefikia kiwango kinachotarajiwa', AE: 'Anakaribia kiwango kinachotarajiwa', BE: 'Bado hajafikia kiwango kinachotarajiwa' },
     practice: (skill: string) => `Tafuta mfano uliofanyiwa kazi wa “${skill}” katika kitabu cha mtoto wako. Pitieni mfano huo pamoja na umwombe aeleze hatua moja. Mwache ajaribu mfano mwingine unaofanana, kisha kagueni jibu pamoja. Usipopata mfano, mwombe mwalimu akupendekezee mmoja.`,
@@ -105,7 +119,62 @@ watch(strands, values => {
   }
   showTips.value = false
 }, { immediate: true })
-watch(strandId, () => { showTips.value = false })
+function clearIntroduction(mode: GuidanceMode) {
+  requests[mode]?.abort()
+  delete requests[mode]
+  introductions[mode] = ''
+  pending[mode] = false
+}
+
+async function requestIntroduction(mode: GuidanceMode) {
+  clearIntroduction(mode)
+  const home = mode === 'home_tips'
+  if (home ? !focus.value : !subjects.value.length) return
+  const request = new AbortController()
+  requests[mode] = request
+  pending[mode] = true
+  try {
+    const result = await $fetch<{ source: string; introduction: string | null }>('/api/parent/explanation', {
+      method: 'POST',
+      signal: request.signal,
+      body: {
+        mode,
+        language: language.value,
+        ...(home ? { subject_id: Number(subjectId.value), strand_id: Number(strandId.value) } : {}),
+      },
+    })
+    if (requests[mode] === request && result.source === 'model' && result.introduction) {
+      introductions[mode] = result.introduction
+    }
+  } catch {
+    // The written introduction is already visible.
+  } finally {
+    if (requests[mode] === request) {
+      delete requests[mode]
+      pending[mode] = false
+    }
+  }
+}
+
+function openGuidance(mode: GuidanceMode) {
+  if (mode === 'summary') showSummary.value = true
+  else showTips.value = true
+  void requestIntroduction(mode)
+}
+
+watch([subjectId, strandId, subjects], () => {
+  showTips.value = false
+  clearIntroduction('home_tips')
+})
+watch(subjects, () => clearIntroduction('summary'))
+watch(language, () => {
+  if (showSummary.value) void requestIntroduction('summary')
+  if (showTips.value) void requestIntroduction('home_tips')
+})
+onBeforeUnmount(() => {
+  clearIntroduction('summary')
+  clearIntroduction('home_tips')
+})
 </script>
 
 <template>
@@ -122,10 +191,14 @@ watch(strandId, () => { showTips.value = false })
     <div class="ai-grid">
       <section class="ai-card" aria-labelledby="summary-heading">
         <h3 id="summary-heading">{{ t.summary }}</h3>
-        <button class="controls" type="button" @click="showSummary = true">{{ t.showSummary }}</button>
+        <button class="controls" type="button" :disabled="pending.summary" @click="openGuidance('summary')">{{ t.showSummary }}</button>
         <div v-if="showSummary" aria-live="polite">
           <h4>{{ t.guide }}</h4>
           <ul><li v-for="level in levels" :key="level"><strong>{{ level }}</strong> — {{ t.meanings[level] }}</li></ul>
+          <template v-if="subjects.length">
+            <p>{{ introductions.summary || (supportStrands.length ? t.summaryIntro : t.noSupportIntro) }}</p>
+            <p v-if="pending.summary || introductions.summary" class="note">{{ pending.summary ? t.preparing : t.modelIntro }}</p>
+          </template>
           <h4>{{ t.results }}</h4>
           <p v-if="!subjects.length">{{ t.empty }}</p>
           <section v-for="subject in subjects" :key="subject.id" class="subject-guidance">
@@ -164,7 +237,7 @@ watch(strandId, () => { showTips.value = false })
           <select id="tips-strand" v-model="strandId" :disabled="!strands.length">
             <option v-for="strand in strands" :key="strand.id" :value="String(strand.id)">{{ strand.name }}</option>
           </select>
-          <button type="button" :disabled="!focus" @click="showTips = true">{{ t.showTips }}</button>
+          <button type="button" :disabled="!focus || pending.home_tips" @click="openGuidance('home_tips')">{{ t.showTips }}</button>
         </div>
         <p v-if="!focus">{{ t.empty }}</p>
         <div v-if="showTips && focus" aria-live="polite">
@@ -172,6 +245,8 @@ watch(strandId, () => { showTips.value = false })
           <h4>{{ focus.name }}</h4>
           <p><strong>{{ focus.competency_level }}</strong> — {{ t.meanings[focus.competency_level] }}</p>
           <p>{{ t.context[focus.competency_level] }}</p>
+          <p>{{ introductions.home_tips || t.tipsIntro }}</p>
+          <p v-if="pending.home_tips || introductions.home_tips" class="note">{{ pending.home_tips ? t.preparing : t.modelIntro }}</p>
           <p>{{ activity }}</p>
         </div>
       </section>
@@ -180,9 +255,9 @@ watch(strandId, () => { showTips.value = false })
 </template>
 
 <style scoped>
-.explanation{margin:24px 0;padding:24px;border:1px solid #dce6e2;border-radius:16px;background:#f4f9f5}h2{margin-top:10px}.ai-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.ai-card{min-width:0;background:white;border:1px solid #dfebe3;border-radius:12px;padding:22px}.ai-card h3{margin-top:0}.ai-card p,li{line-height:1.7;font-size:14px}li{margin-bottom:10px}ul{padding-left:20px}.generated-text{white-space:pre-wrap;overflow-wrap:anywhere}.source,.count{font-size:12px;color:#536e60}.source{margin-top:22px;font-weight:650}.note{font-size:12px;line-height:1.6;margin-bottom:0}.ai-card button{margin-top:12px}.ai-card select{margin-bottom:14px}@media(max-width:850px){.ai-grid{grid-template-columns:1fr}}@media(max-width:480px){.explanation{padding:18px 12px}.ai-card{padding:18px 14px}.ai-card button{width:100%}}@media print{.controls{display:none!important}.ai-grid{display:block}.ai-card{break-inside:avoid;margin-bottom:14px}.explanation{background:white;border-color:#999}h2,h3,h4{break-after:avoid}}
+.explanation{margin:24px 0;padding:24px;border:1px solid #e2d8ea;border-radius:16px;background:#f7f4f9}h2{margin-top:10px}.ai-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.ai-card{min-width:0;background:white;border:1px solid #e6dded;border-radius:12px;padding:22px}.ai-card h3{margin-top:0}.ai-card p,li{line-height:1.7;font-size:14px}li{margin-bottom:10px}ul{padding-left:20px}.generated-text{white-space:pre-wrap;overflow-wrap:anywhere}.source,.count{font-size:12px;color:#643f82}.source{margin-top:22px;font-weight:650}.note{font-size:12px;line-height:1.6;margin-bottom:0}.ai-card button{margin-top:12px}.ai-card select{margin-bottom:14px}@media(max-width:850px){.ai-grid{grid-template-columns:1fr}}@media(max-width:480px){.explanation{padding:18px 12px}.ai-card{padding:18px 14px}.ai-card button{width:100%}}@media print{.controls{display:none!important}.ai-grid{display:block}.ai-card{break-inside:avoid;margin-bottom:14px}.explanation{background:white;border-color:#999}h2,h3,h4{break-after:avoid}}
 </style>
 
 <style scoped>
-.subject-guidance{border-bottom:1px solid #d9e6dd;margin:16px 0;padding:4px 0 12px}.subject-guidance h5{font-size:16px;margin:8px 0}.strand-summary{margin:12px 0;color:#385b49}.support-subjects{background:#f0f6ed;border:1px solid #d5e4cf;border-radius:10px;padding:16px;margin:20px 0}.support-subjects h4{margin-top:0}.ai-grid{align-items:start}@media print{.subject-guidance{break-inside:avoid}.support-subjects{background:white}}
+.subject-guidance{border-bottom:1px solid #e0d6e9;margin:16px 0;padding:4px 0 12px}.subject-guidance h5{font-size:16px;margin:8px 0}.strand-summary{margin:12px 0;color:#4c2e65}.support-subjects{background:#f2eef5;border:1px solid #dbcee5;border-radius:10px;padding:16px;margin:20px 0}.support-subjects h4{margin-top:0}.ai-grid{align-items:start}@media print{.subject-guidance{break-inside:avoid}.support-subjects{background:white}}
 </style>

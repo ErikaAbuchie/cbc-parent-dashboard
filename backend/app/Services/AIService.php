@@ -15,6 +15,54 @@ class AIService
         'BE' => 'Below Expectations: needs more help and practice with this skill.',
     ];
 
+    public function rewriteIntroduction(array $ratings, string $mode, string $language): array
+    {
+        $fallback = ['source' => 'fallback', 'introduction' => null];
+        if (! $ratings || ! config('services.ollama.enabled')) {
+            return $fallback;
+        }
+
+        $hasSupport = count(array_intersect(array_column($ratings, 'competency_level'), ['AE', 'BE'])) > 0;
+        $home = $mode === 'home_tips';
+        $source = match (true) {
+            $home && $language === 'sw' => 'Fanyeni zoezi lililo hapa chini pamoja. Mwombe mtoto wako aeleze kwa maneno yake alichofanya.',
+            $home => 'Try the activity below together. Ask your child to explain what they did in their own words.',
+            $hasSupport && $language === 'sw' => 'Ripoti inaonyesha jinsi mtoto wako anavyofanya katika kila somo na mada ambazo anahitaji kuzifanyia mazoezi zaidi.',
+            $hasSupport => 'The report shows how your child is doing in each subject and which topics could use more practice.',
+            $language === 'sw' => 'Ripoti inaonyesha jinsi mtoto wako anavyofanya katika kila somo. Katika mada zilizotathminiwa, mtoto wako amefikia au amezidi matarajio.',
+            default => 'The report shows how your child is doing in each subject. The assessed topics meet or exceed expectations.',
+        };
+        $targetLanguage = $language === 'sw' ? 'Kiswahili' : 'English';
+        $schema = ['type' => 'object', 'properties' => [
+            'introduction' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 300],
+        ], 'required' => ['introduction'], 'additionalProperties' => false];
+
+        try {
+            $response = Http::connectTimeout(3)->timeout(30)->post(rtrim(config('services.ollama.url'), '/').'/api/generate', [
+                'model' => config('services.ollama.model'),
+                'stream' => false,
+                'format' => $schema,
+                'keep_alive' => '5m',
+                'system' => "Rewrite the supplied introduction in everyday {$targetLanguage} for a parent. Keep its meaning. Use one or two short sentences. Do not add grades, numbers, topic names, suggested activities or new facts. Return only the introduction in the requested JSON format.",
+                'prompt' => $source,
+                'options' => ['temperature' => 0, 'num_ctx' => 2048, 'num_predict' => 160],
+            ]);
+            if (! $response->successful() || $response->json('done') !== true || $response->json('done_reason') === 'length') {
+                return $fallback;
+            }
+            $raw = $response->json('response');
+            $result = is_string($raw) && strlen($raw) <= 4096 ? json_decode($raw, true) : null;
+            $intro = is_array($result) && array_keys($result) === ['introduction'] && is_string($result['introduction'])
+                ? trim($result['introduction']) : '';
+            if ($intro === '' || mb_strlen($intro) > 300 || preg_match('/[\r\n<>%`\p{N}]|\b(?:EE|ME|AE|BE)\b/u', $intro)) {
+                return $fallback;
+            }
+            return ['source' => 'model', 'introduction' => $intro];
+        } catch (Throwable) {
+            return $fallback;
+        }
+    }
+
     public function explainReport(array $ratings, int $grade, string $mode = 'summary'): array
     {
         $guide = [];
