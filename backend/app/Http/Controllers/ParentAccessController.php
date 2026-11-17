@@ -78,10 +78,12 @@ class ParentAccessController extends Controller
         [$session, $student, $report] = $this->context($request);
         $data = $request->validate(['mode' => ['sometimes', 'required', 'in:summary,home_tips'],
             'language' => ['sometimes', 'required', 'in:en,sw'],
+            'activity_reference' => ['exclude_unless:mode,home_tips', 'nullable', 'string', 'max:750'],
             'subject_id' => ['required_if:mode,home_tips', 'integer', 'min:1'],
             'strand_id' => ['required_if:mode,home_tips', 'integer', 'min:1']]);
         $mode = $data['mode'] ?? 'summary';
         $language = $data['language'] ?? null;
+        $activityReference = $data['activity_reference'] ?? null;
         // Ignore submitted ratings, learner IDs and prompts: use only authorised records.
         $query = Assessment::where('student_id', $student->id)->where('user_id', $report->user_id)
             ->where('term', $report->term)->whereIn('sub_strand_id', $report->sub_strand_ids)
@@ -94,7 +96,7 @@ class ParentAccessController extends Controller
                 'strand' => $a->subStrand->strand->name,
                 'sub_strand' => $a->subStrand->name, 'competency_level' => $a->competency_level])->all();
         abort_if($mode === 'home_tips' && ! $ratings, 404, 'This subject and strand have no assessed results in your report.');
-        $cacheKey = 'parent-explanation:v7:'.hash('sha256', json_encode([$mode, $language, $data['subject_id'] ?? null, $data['strand_id'] ?? null, $report->id, $student->schoolClass->grade_level,
+        $cacheKey = 'parent-explanation:v8:'.hash('sha256', json_encode([$mode, $language, $activityReference, $data['subject_id'] ?? null, $data['strand_id'] ?? null, $report->id, $student->schoolClass->grade_level,
             config('services.ollama'), $ratings], JSON_THROW_ON_ERROR));
         if ($cached = Cache::get($cacheKey)) return response()->json($cached)->header('Cache-Control', 'no-store');
         $limitKey = 'parent-explanation:'.$session->parent_access_id;
@@ -105,8 +107,10 @@ class ParentAccessController extends Controller
         try {
             $result = $language === null
                 ? $ai->explainReport($ratings, (int) $student->schoolClass->grade_level, $mode)
-                : $ai->rewriteIntroduction($ratings, $mode, $language);
-            if ($result['source'] === 'model') Cache::put($cacheKey, $result, 600);
+                : $ai->rewriteIntroduction($ratings, $mode, $language, $activityReference);
+            if ($result['source'] === 'model' && ($activityReference === null || isset($result['activity']))) {
+                Cache::put($cacheKey, $result, 600);
+            }
         } finally {
             $lock->release();
         }

@@ -15,6 +15,7 @@ const subjectId = ref('')
 const strandId = ref('')
 const levels: Level[] = ['EE', 'ME', 'AE', 'BE']
 const introductions = reactive({ summary: '', home_tips: '' })
+const generatedActivity = ref('')
 const pending = reactive({ summary: false, home_tips: false })
 const requests: Partial<Record<GuidanceMode, AbortController>> = {}
 
@@ -41,6 +42,7 @@ const copy = {
     noSupportIntro: 'The report shows how your child is doing in each subject. The assessed topics meet or exceed expectations.',
     preparing: 'Preparing an AI introduction…',
     modelIntro: 'Introduction written with AI',
+    modelActivity: 'Activity returned by AI',
     note: 'Subject and skill names appear as recorded in the report.',
     meanings: { EE: 'Exceeding expectations', ME: 'Meeting expectations', AE: 'Approaching expectations', BE: 'Below expectations' },
     practice: (skill: string) => `Find a worked example of “${skill}” in your child’s schoolbook. Go through it together and ask your child to explain one step. Let them try a similar example, then check it together. If you cannot find an example, ask the teacher to suggest one.`,
@@ -68,6 +70,7 @@ const copy = {
     noSupportIntro: 'Ripoti inaonyesha jinsi mtoto wako anavyofanya katika kila somo. Katika mada zilizotathminiwa, mtoto wako amefikia au amezidi matarajio.',
     preparing: 'Utangulizi wa AI unaandaliwa…',
     modelIntro: 'Utangulizi umeandikwa kwa msaada wa AI',
+    modelActivity: 'Zoezi limetolewa na AI',
     note: 'Majina ya masomo na stadi yameandikwa kama yalivyo kwenye ripoti.',
     meanings: { EE: 'Amezidi kiwango kinachotarajiwa', ME: 'Amefikia kiwango kinachotarajiwa', AE: 'Anakaribia kiwango kinachotarajiwa', BE: 'Bado hajafikia kiwango kinachotarajiwa' },
     practice: (skill: string) => `Tafuta mfano uliofanyiwa kazi wa “${skill}” katika kitabu cha mtoto wako. Pitieni mfano huo pamoja na umwombe aeleze hatua moja. Mwache ajaribu mfano mwingine unaofanana, kisha kagueni jibu pamoja. Usipopata mfano, mwombe mwalimu akupendekezee mmoja.`,
@@ -107,12 +110,16 @@ const focus = computed(() => {
   }
   return undefined
 })
-const activity = computed(() => {
+const specificActivity = computed(() => {
   const topic = focus.value
   if (!topic) return ''
   const subject = subjects.value.find(item => String(item.id) === subjectId.value)
-  const specificActivity = homeActivity(subject?.name ?? '', topic.name, language.value)
-  if (specificActivity) return specificActivity
+  return homeActivity(subject?.name ?? '', topic.name, language.value)
+})
+const activity = computed(() => {
+  const topic = focus.value
+  if (!topic) return ''
+  if (specificActivity.value) return specificActivity.value
   if (topic.competency_level === 'EE' || topic.competency_level === 'ME') return t.value.extend(topic.name)
   return t.value.practice(topic.name)
 })
@@ -131,6 +138,7 @@ function clearIntroduction(mode: GuidanceMode) {
   requests[mode]?.abort()
   delete requests[mode]
   introductions[mode] = ''
+  if (mode === 'home_tips') generatedActivity.value = ''
   pending[mode] = false
 }
 
@@ -138,21 +146,23 @@ async function requestIntroduction(mode: GuidanceMode) {
   clearIntroduction(mode)
   const home = mode === 'home_tips'
   if (home ? !focus.value : !subjects.value.length) return
+  const reference = home ? specificActivity.value : undefined
   const request = new AbortController()
   requests[mode] = request
   pending[mode] = true
   try {
-    const result = await $fetch<{ source: string; introduction: string | null }>('/api/parent/explanation', {
+    const result = await $fetch<{ source: string; introduction: string | null; activity?: string | null }>('/api/parent/explanation', {
       method: 'POST',
       signal: request.signal,
       body: {
         mode,
         language: language.value,
-        ...(home ? { subject_id: Number(subjectId.value), strand_id: Number(strandId.value) } : {}),
+        ...(home ? { subject_id: Number(subjectId.value), strand_id: Number(strandId.value), activity_reference: reference || undefined } : {}),
       },
     })
-    if (requests[mode] === request && result.source === 'model' && result.introduction) {
-      introductions[mode] = result.introduction
+    if (requests[mode] === request && result.source === 'model') {
+      introductions[mode] = result.introduction ?? ''
+      if (reference && result.activity === reference) generatedActivity.value = result.activity
     }
   } catch {
     // The written introduction is already visible.
@@ -254,7 +264,8 @@ onBeforeUnmount(() => {
           <p><strong>{{ focus.competency_level }}</strong> — {{ t.meanings[focus.competency_level] }}</p>
           <p>{{ introductions.home_tips || t.context[focus.competency_level] }}</p>
           <p v-if="pending.home_tips || introductions.home_tips" class="note">{{ pending.home_tips ? t.preparing : t.modelIntro }}</p>
-          <p>{{ activity }}</p>
+          <p>{{ generatedActivity || activity }}</p>
+          <p v-if="generatedActivity" class="note">{{ t.modelActivity }}</p>
         </div>
       </section>
     </div>
