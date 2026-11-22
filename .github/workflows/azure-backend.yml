@@ -1,0 +1,74 @@
+name: Deploy Laravel backend to Azure
+
+# Manual deployment while the database and services are being configured.
+on:
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: Azure Web App resource name (not its URL)
+        required: true
+        default: parental-insight-api
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: azure-backend-${{ inputs.app_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_pgsql, intl, bcmath, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate Composer manifest
+        working-directory: backend
+        run: composer validate --no-check-publish
+
+      - name: Stage backend source without local data
+        run: |
+          mkdir -p deploy
+          rsync -a backend/ deploy/ \
+            --exclude='.env*' --exclude='auth.json' \
+            --exclude='vendor/' --exclude='node_modules/' \
+            --exclude='storage/' --exclude='bootstrap/cache/' \
+            --exclude='tests/' --exclude='.phpunit*' \
+            --exclude='database/*.sqlite*' --exclude='public/hot' \
+            --exclude='public/storage' --exclude='*.log'
+          mkdir -p deploy/storage/framework/{cache/data,sessions,views} deploy/storage/logs deploy/bootstrap/cache
+          # Normalise shell files even if a Windows checkout used CRLF.
+          sed -i 's/\r$//' deploy/azure/startup.sh
+          sh -n deploy/azure/startup.sh
+
+      - name: Install production dependencies
+        working-directory: deploy
+        env:
+          APP_ENV: production
+          APP_DEBUG: 'false'
+          LOG_CHANNEL: stderr
+          CACHE_STORE: array
+          SESSION_DRIVER: array
+        run: |
+          composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+          composer check-platform-reqs --no-dev
+
+      - name: Package backend
+        working-directory: deploy
+        run: zip -qr ../backend-deploy.zip .
+
+      - name: Deploy to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ inputs.app_name }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: backend-deploy.zip
