@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use AfricasTalking\SDK\AfricasTalking;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
@@ -26,9 +27,21 @@ class AfricasTalkingParentSms implements ParentSmsSender
             $result = $client->sms()->send(['to' => $phone, 'message' => $message]);
             $recipients = $result['data']->SMSMessageData->Recipients ?? [];
             if (count($recipients) !== 1 || (int) ($recipients[0]->statusCode ?? 0) !== 101) {
+                Log::warning('Parent SMS rejected by provider', [
+                    'recipient_count' => count($recipients),
+                    'provider_status_code' => (int) ($recipients[0]->statusCode ?? 0),
+                ]);
                 throw new RuntimeException('SMS not accepted.');
             }
-        } catch (Throwable) {
+        } catch (Throwable $error) {
+            $diagnostic = ['exception_type' => get_class($error)];
+            if ($error instanceof \GuzzleHttp\Exception\RequestException) {
+                $diagnostic['http_status'] = $error->getResponse()?->getStatusCode();
+            }
+            if ($error instanceof \GuzzleHttp\Exception\ConnectException) {
+                $diagnostic['curl_code'] = (int) ($error->getHandlerContext()['errno'] ?? 0);
+            }
+            Log::warning('Parent SMS submission diagnostic', $diagnostic);
             // Provider exceptions can contain the SMS body; never propagate or log them.
             throw new RuntimeException('SMS submission failed. Check the sandbox configuration and recipient.');
         }
