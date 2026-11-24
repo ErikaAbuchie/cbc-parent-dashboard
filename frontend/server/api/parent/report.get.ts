@@ -1,5 +1,6 @@
 type ParentReport = {
   student: { full_name: string; admission_number: string; class_name: string; school_name: string; grade_level: number }
+  report_id: number; available_terms: { id: number; term: string }[]; last_updated_at: string | null
   term: string; finalised_at: string; has_demo_results: boolean; summary_method: string
   trend: { year: number | null; terms: string[]; subjects: { id: number; name: string;
     points: { term: string; average_score: number | null; assessed_count: number; has_demo_results: boolean }[] }[] }
@@ -15,6 +16,7 @@ export default defineEventHandler(async (event) => {
   if (!token) throw createError({ statusCode: 401, statusMessage: 'Please verify your access code.' })
   try {
     return await $fetch<ParentReport>(`${useRuntimeConfig(event).apiBase}/parent/report`, {
+      query: { report_id: getQuery(event).report_id },
       headers: { Accept: 'application/json', Authorization: `Bearer ${token}` }, timeout: 10000
     })
   } catch (error: any) {
@@ -22,6 +24,7 @@ export default defineEventHandler(async (event) => {
       deleteCookie(event, 'parent_session', { path: '/' })
       throw createError({ statusCode: 401, statusMessage: 'Your report session has ended. Please verify your code again.' })
     }
+    if ([404, 422].includes(error.response?.status)) throw createError({ statusCode: error.response.status, statusMessage: 'This term is unavailable for your learner.' })
     throw createError({ statusCode: 502, statusMessage: 'Cannot load the report. Please try again.' })
   }
 })

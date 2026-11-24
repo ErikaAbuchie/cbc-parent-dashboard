@@ -62,6 +62,10 @@ class ParentAccessController extends Controller
         return response()->json([
             'student' => ['full_name' => $student->full_name, 'admission_number' => $student->admission_number,
                 'class_name' => $student->schoolClass->name, 'school_name' => $student->schoolClass->school->name, 'grade_level' => $student->schoolClass->grade_level],
+            'report_id' => $report->id,
+            'available_terms' => app(\App\Services\ParentReportAccess::class)->reports($student, $report)
+                ->map(fn ($item) => ['id' => $item->id, 'term' => $item->term])->all(),
+            'last_updated_at' => $assessments->max('updated_at')?->toIso8601String(),
             'term' => $report->term, 'finalised_at' => $report->finalised_at->toIso8601String(),
             'has_demo_results' => $assessments->contains(fn ($a) => str_starts_with($a->remarks ?? '', '[DEMO]')),
             'summary_method' => 'KNEC rubric levels: BE=1, AE=2, ME=3, EE=4. Recorded performance levels are based on assessment criteria and descriptors. Subject and strand averages are supplementary summaries of included ratings, not KNEC overall grades or percentages. No overall level is assigned automatically.',

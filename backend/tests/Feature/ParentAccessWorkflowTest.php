@@ -191,6 +191,78 @@ class ParentAccessWorkflowTest extends TestCase
         $this->assertSame(1, $access->fresh()->sms_attempts);
     }
 
+    public function test_old_code_opens_latest_term_and_can_select_authorised_history(): void
+    {
+        $this->issue();
+        $sub = $this->selection['sub_strand_ids'][0];
+        $latest = TermReport::create(['student_id' => $this->student->id, 'user_id' => $this->teacher->id,
+            'term' => 'Term 3 2026', 'sub_strand_ids' => [$sub], 'finalised_at' => now()]);
+        Assessment::create(['student_id' => $this->student->id, 'user_id' => $this->teacher->id,
+            'term' => 'Term 3 2026', 'sub_strand_id' => $sub, 'competency_level' => 'EE']);
+        $token = $this->verify()->assertOk()->json('token');
+        $headers = ['Authorization' => 'Bearer '.$token];
+        $this->getJson('/api/parent/report', $headers)->assertOk()->assertJsonPath('term', 'Term 3 2026')
+            ->assertJsonPath('available_terms.0.id', $latest->id)->assertJsonPath('assessments.0.competency_level', 'EE');
+        $old = TermReport::where('term', 'Term 1 2026')->firstOrFail();
+        $this->getJson('/api/parent/report?report_id='.$old->id, $headers)->assertOk()
+            ->assertJsonPath('term', 'Term 1 2026')->assertJsonPath('assessments.0.competency_level', 'ME');
+        $otherTeacher = User::factory()->create();
+        $private = TermReport::create(['student_id' => $this->student->id, 'user_id' => $otherTeacher->id,
+            'term' => 'Term 2 2026', 'sub_strand_ids' => [$sub], 'finalised_at' => now()]);
+        $this->getJson('/api/parent/report?report_id='.$private->id, $headers)->assertNotFound();
+        $otherStudent = Student::where('id', '!=', $this->student->id)->firstOrFail();
+        $private->update(['student_id' => $otherStudent->id, 'user_id' => $this->teacher->id]);
+        $this->getJson('/api/parent/report?report_id='.$private->id, $headers)->assertNotFound();
+    }
+
+    public function test_assessment_save_updates_progress_notifies_and_preserves_existing_code(): void
+    {
+        $access = $this->issue();
+        $access->update(['sms_status' => 'accepted']);
+        Queue::fake();
+        $payload = ['term' => 'Term 2 2026', 'sub_strand_id' => $this->selection['sub_strand_ids'][0],
+            'assessments' => [['student_id' => $this->student->id, 'competency_level' => 'AE', 'remarks' => null]]];
+        $url = '/api/teacher/classes/'.$this->class->id.'/assessments';
+        app('auth')->forgetGuards();
+        $this->postJson($url, $payload, $this->headers)->assertOk()->assertJsonPath('notifications_queued', 1);
+        Queue::assertPushed(\App\Jobs\SendParentProgressNotification::class, 1);
+        Queue::assertNotPushed(SendParentAccessCode::class);
+        $this->assertTrue($access->fresh()->is_active);
+        $this->postJson($url, $payload, $this->headers)->assertOk()->assertJsonPath('notifications_queued', 0);
+        Queue::assertPushed(\App\Jobs\SendParentProgressNotification::class, 1);
+        $token = $this->verify()->assertOk()->json('token');
+        $this->getJson('/api/parent/report', ['Authorization' => 'Bearer '.$token])->assertOk()
+            ->assertJsonPath('term', 'Term 2 2026')->assertJsonPath('assessments.0.competency_level', 'AE');
+    }
+
+    public function test_first_assessment_issues_code_but_disabled_sms_does_not_lose_results(): void
+    {
+        $payload = ['term' => 'Term 2 2026', 'sub_strand_id' => $this->selection['sub_strand_ids'][0],
+            'assessments' => [['student_id' => $this->student->id, 'competency_level' => 'AE']]];
+        $url = '/api/teacher/classes/'.$this->class->id.'/assessments';
+        $this->postJson($url, $payload, $this->headers)->assertOk()->assertJsonPath('notifications_queued', 1);
+        Queue::assertPushed(SendParentAccessCode::class, 1);
+        config(['services.africastalking.enabled' => false]);
+        $payload['term'] = 'Term 3 2026';
+        $this->postJson($url, $payload, $this->headers)->assertOk()->assertJsonPath('notifications_queued', 0);
+        $this->assertDatabaseHas('term_reports', ['student_id' => $this->student->id, 'term' => 'Term 3 2026']);
+    }
+
+    public function test_failed_or_revoked_progress_notification_does_not_revoke_login(): void
+    {
+        $access = $this->issue();
+        $access->update(['sms_status' => 'accepted']);
+        $job = new \App\Jobs\SendParentProgressNotification($access->id, $access->term_report_id);
+        $sender = \Mockery::mock(ParentSmsSender::class);
+        $sender->shouldReceive('send')->once()->andThrow(new \RuntimeException('private provider content'));
+        try { $job->handle($sender); $this->fail('Expected safe failure.'); }
+        catch (\RuntimeException $error) { $this->assertStringNotContainsString('private provider content', $error->getMessage()); }
+        $job->failed(new \RuntimeException('failure'));
+        $this->assertTrue($access->fresh()->is_active);
+        $access->update(['is_active' => false]);
+        $job->handle($sender); // The once-only expectation proves no second send after revocation.
+    }
+
     public function test_sms_failure_is_sanitised_and_terminal_failure_deactivates_code(): void
     {
         $access = $this->issue();

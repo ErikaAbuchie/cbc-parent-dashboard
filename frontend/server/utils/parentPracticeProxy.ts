@@ -11,6 +11,7 @@ export async function parentPracticeProxy(event: H3Event, path = '') {
   try {
     return await $fetch(`${useRuntimeConfig(event).apiBase}/parent/practice${path ? `/${path}` : ''}`, {
       method: method as 'GET' | 'POST', body: method === 'POST' ? await readBody(event) : undefined,
+      query: { report_id: getQuery(event).report_id },
       headers: { Accept: 'application/json', Authorization: `Bearer ${token}` }, timeout: 10000
     })
   } catch (error: any) {

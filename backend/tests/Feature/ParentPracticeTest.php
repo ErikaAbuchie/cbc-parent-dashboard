@@ -63,6 +63,32 @@ class ParentPracticeTest extends TestCase
         $this->getJson('/api/parent/practice/'.$id, $this->headers)->assertOk()->assertJsonPath('correct_count', 2);
     }
 
+    public function test_individual_answers_are_locked_resumable_and_do_not_leak_future_feedback(): void
+    {
+        $id = $this->start();
+        $url = '/api/parent/practice/'.$id.'/answer';
+        $this->postJson($url, ['question_id' => 2, 'answer_index' => 1], $this->headers)->assertUnprocessable();
+        $this->postJson($url, ['question_id' => 1, 'answer_index' => 8], $this->headers)->assertUnprocessable();
+        $this->assertDatabaseCount('quiz_responses', 0);
+        $first = ['question_id' => 1, 'answer_index' => 2];
+        $this->postJson($url, $first, $this->headers)->assertOk()->assertJsonCount(1, 'answered')
+            ->assertJsonPath('answered.0.is_correct', true)->assertJsonPath('completed', false)
+            ->assertJsonMissingPath('questions.1.correct')->assertJsonMissingPath('review');
+        $this->postJson($url, $first, $this->headers)->assertOk()->assertJsonCount(1, 'answered');
+        $this->postJson($url, ['question_id' => 1, 'answer_index' => 0], $this->headers)->assertStatus(409);
+        $this->assertDatabaseCount('quiz_responses', 1);
+        $this->getJson('/api/parent/practice/'.$id, $this->headers)->assertOk()->assertJsonPath('answered.0.selected_index', 2);
+        $this->assertSame($id, $this->start());
+        $this->postJson($url, ['question_id' => 2, 'answer_index' => 0], $this->headers)->assertOk()->assertJsonPath('answered.1.is_correct', false);
+        $this->postJson($url, ['question_id' => 3, 'answer_index' => 2], $this->headers)->assertOk()
+            ->assertJsonPath('completed', true)->assertJsonPath('correct_count', 2)->assertJsonCount(3, 'review');
+        $this->postJson($url, ['question_id' => 3, 'answer_index' => 2], $this->headers)->assertOk();
+        $this->assertDatabaseCount('quiz_responses', 3);
+        $this->assertSame('AE', $this->assessment->fresh()->competency_level);
+        $this->access->update(['is_active' => false]);
+        $this->postJson($url, $first, $this->headers)->assertUnauthorized();
+    }
+
     public function test_partial_duplicate_or_invalid_answers_do_not_partially_save(): void
     {
         $id = $this->start();
@@ -86,6 +112,7 @@ class ParentPracticeTest extends TestCase
         $quiz->save();
         $this->getJson('/api/parent/practice/'.$quiz->id, $this->headers)->assertNotFound();
         $this->postJson('/api/parent/practice/'.$quiz->id.'/submit', [], $this->headers)->assertNotFound();
+        $this->postJson('/api/parent/practice/'.$quiz->id.'/answer', ['question_id' => 1, 'answer_index' => 2], $this->headers)->assertNotFound();
         $this->access->update(['is_active' => false]);
         $this->getJson('/api/parent/practice', $this->headers)->assertUnauthorized();
         $this->postJson('/api/parent/practice/'.$id.'/submit', [], $this->headers)->assertUnauthorized();
@@ -132,13 +159,13 @@ class ParentPracticeTest extends TestCase
         $otherReport->term = 'Term 2 2026'; $otherReport->save();
         \App\Models\QuizSession::create(array_merge($attributes, ['completed_at' => now(), 'term_report_id' => $otherReport->id]));
         \App\Models\QuizSession::create(array_merge($attributes, ['completed_at' => now(), 'sub_strand_id' => SubStrand::where('name', 'Addition')->firstOrFail()->id]));
-        $response = $this->getJson('/api/parent/practice', $this->headers)->assertOk()->assertJsonCount(5, 'history')
+        $response = $this->getJson('/api/parent/practice?report_id='.$this->access->term_report_id, $this->headers)->assertOk()->assertJsonCount(5, 'history')
             ->assertJsonPath('history.0.correct_count', 2)->assertJsonPath('history.0.total', 3)
             ->assertJsonMissingPath('history.0.question_set')->assertJsonMissingPath('history.0.correct_answer');
         $this->assertSame(array_slice($ids, 0, 5), array_column($response->json('history'), 'id'));
         TermReport::findOrFail($this->access->term_report_id)->update(['sub_strand_ids' => []]);
-        $this->getJson('/api/parent/practice', $this->headers)->assertOk()->assertJsonCount(0, 'history');
-        $this->getJson('/api/parent/practice/'.$ids[0], $this->headers)->assertNotFound();
+        $this->getJson('/api/parent/practice?report_id='.$this->access->term_report_id, $this->headers)->assertOk()->assertJsonCount(0, 'history');
+        $this->getJson('/api/parent/practice/'.$ids[0].'?report_id='.$this->access->term_report_id, $this->headers)->assertNotFound();
     }
 
 }

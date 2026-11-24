@@ -43,7 +43,7 @@ class ParentReportTrendTest extends TestCase
         $token = str_repeat('t', 64);
         ParentSession::create(['parent_access_id' => $access->id, 'token_hash' => hash('sha256', $token), 'expires_at' => now()->addHour()]);
         $headers = ['Authorization' => 'Bearer '.$token];
-        $this->getJson('/api/parent/report?student_id=999', $headers)->assertOk()
+        $this->getJson('/api/parent/report?student_id=999&report_id='.$reports[2]->id, $headers)->assertOk()
             ->assertJsonPath('trend.year', 2025)->assertJsonCount(1, 'trend.subjects')
             ->assertJsonPath('trend.subjects.0.name', 'Mathematics')
             ->assertJsonPath('trend.subjects.0.points.0.average_score', 2)

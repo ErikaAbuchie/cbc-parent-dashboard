@@ -88,7 +88,8 @@ class TeacherAssessmentController extends Controller
             'assessments.*.remarks' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        DB::transaction(function () use ($data, $selection, $class, $request) {
+        $notifications = DB::transaction(function () use ($data, $selection, $class, $request) {
+            $queued = 0;
             // Serialize saves for this class so concurrent retries cannot create duplicates.
             SchoolClass::whereKey($class->id)->lockForUpdate()->firstOrFail();
             if ($class->students()->whereIn('id', array_column($data['assessments'], 'student_id'))->count() !== count($data['assessments'])) {
@@ -120,11 +121,15 @@ class TeacherAssessmentController extends Controller
                         'competency_level' => $assessment->competency_level, 'remarks' => $assessment->remarks,
                         'recorded_at' => now(),
                     ]);
+                    $student = $class->students()->findOrFail($row['student_id']);
+                    if (app(\App\Services\ParentProgressPublisher::class)->publish($student, $request->user()->id, $selection['term'])) $queued++;
                 }
             }
+            return $queued;
         });
 
-        return response()->json(['message' => 'Assessments saved.', 'saved_count' => count($data['assessments'])]);
+        return response()->json(['message' => 'Assessments saved. Parent progress updated.', 'saved_count' => count($data['assessments']),
+            'notifications_queued' => $notifications]);
     }
 
     public function history(Request $request, int $classId, int $assessmentId): JsonResponse

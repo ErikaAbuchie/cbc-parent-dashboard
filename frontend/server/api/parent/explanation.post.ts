@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event) || {}
   try {
     return await $fetch(`${useRuntimeConfig(event).apiBase}/parent/explanation`, {
-      method: 'POST', body: { mode: body.mode ?? 'summary', language: body.language, subject_id: body.subject_id, strand_id: body.strand_id, activity_reference: body.activity_reference },
+      method: 'POST', body: { report_id: body.report_id, mode: body.mode ?? 'summary', language: body.language, subject_id: body.subject_id, strand_id: body.strand_id, activity_reference: body.activity_reference },
       headers: { Accept: 'application/json', Authorization: `Bearer ${token}` }, timeout: 135000
     })
   } catch (error: any) {

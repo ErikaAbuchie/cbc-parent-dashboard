@@ -4,7 +4,10 @@ type History = { id: number; topic: string; completed_at: string; correct_count:
 type Answer = { question_id: number; selected_index: number; is_correct: boolean; correct_answer: string; feedback: string }
 type Attempt = { exercise_id?: number | null; exercise_title?: string | null; id: number; sub_strand_id: number; sub_strand: string; completed: boolean; questions: { id: number; question: string; options: string[] }[]; answered: Answer[]; review?: { question: string; selected_answer: string; correct_answer: string; is_correct: boolean; feedback: string }[] }
 useHead({ title: 'Quiz studio | CBC Parent Insight' })
-const { data, error, refresh } = await useFetch<{ topics: Topic[]; history: History[] }>('/api/parent/practice')
+definePageMeta({ key: route => route.fullPath })
+const route = useRoute()
+const reportQuery = computed(() => ({ report_id: typeof route.query.report_id === 'string' ? route.query.report_id : undefined }))
+const { data, error, refresh } = await useFetch<{ topics: Topic[]; history: History[] }>('/api/parent/practice', { query: reportQuery })
 if (error.value?.statusCode === 401) await navigateTo('/parent/login', { replace: true })
 const attempt = ref<Attempt | null>(null)
 const currentIndex = ref(0)
@@ -41,14 +44,13 @@ async function openAttempt(topicId?: number, historyId?: number, exerciseId?: nu
   if (busy.value) return
   busy.value = true; message.value = ''
   try {
-    const result = historyId ? await $fetch<Attempt>(`/api/parent/practice/${historyId}`) : await $fetch<Attempt>('/api/parent/practice', { method: 'POST', body: exerciseId ? { exercise_id: exerciseId } : { sub_strand_id: topicId } })
+    const result = historyId ? await $fetch<Attempt>(`/api/parent/practice/${historyId}`, { query: reportQuery.value }) : await $fetch<Attempt>('/api/parent/practice', { method: 'POST', query: reportQuery.value, body: exerciseId ? { exercise_id: exerciseId } : { sub_strand_id: topicId } })
     attempt.value = result; showResults.value = result.completed; selection.value = null
     const next = result.questions.findIndex(q => !result.answered.some(a => a.question_id === q.id))
     currentIndex.value = next < 0 ? 0 : next
     await focusPanel()
   } catch (error) { await fail(error) } finally { busy.value = false }
 }
-const route = useRoute()
 onMounted(() => {
   watch(() => route.query.attempt, value => {
     if (value === undefined) return
@@ -60,7 +62,7 @@ async function checkAnswer() {
   if (!attempt.value || !current.value || selection.value === null || busy.value || feedback.value) return
   busy.value = true; message.value = ''
   try {
-    attempt.value = await $fetch<Attempt>(`/api/parent/practice/${attempt.value.id}/answer`, { method: 'POST', body: { question_id: current.value.id, answer_index: selection.value } })
+    attempt.value = await $fetch<Attempt>(`/api/parent/practice/${attempt.value.id}/answer`, { method: 'POST', query: reportQuery.value, body: { question_id: current.value.id, answer_index: selection.value } })
     if (attempt.value.completed) await refresh()
     await focusPanel()
   } catch (error) { await fail(error) } finally { busy.value = false }
@@ -258,11 +260,15 @@ async function backToTopics() {
 .library-heading label { display: flex; align-items: center; gap: 10px; }
 .library-heading select { width: auto; max-width: 100%; }
 .topic-grid, .answer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.topic-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
 .topic-card, .quiz-panel, .history, .empty-state {
   padding: clamp(18px, 3vw, 30px); background: white; border: 1px solid var(--quiz-line); border-radius: 20px;
   box-shadow: 0 10px 24px #37205b0b;
 }
 .topic-card { display: flex; flex-direction: column; align-items: flex-start; transition: border-color 180ms, box-shadow 180ms, transform 180ms var(--portal-ease); }
+.topic-card:nth-child(-n + 3) { animation: page-arrival 260ms var(--portal-ease) backwards; }
+.topic-card:nth-child(2) { animation-delay: 45ms; }
+.topic-card:nth-child(3) { animation-delay: 90ms; }
 .topic-meta { display: flex; align-items: center; gap: 10px; color: #58446c; font-size: .875rem; }
 .topic-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #f0e4fb; color: var(--quiz-accent); flex-shrink: 0; }
 .topic-icon svg { width: 21px; }
@@ -299,10 +305,10 @@ legend { font-size: clamp(1.375rem, 3vw, 2rem); font-weight: 750; line-height: 1
 .answer-option input { margin: 0; flex-shrink: 0; }
 .answer-option.chosen { background: #f5edff; border-color: #8146be; box-shadow: 0 0 0 2px #8146be24; }
 .answer-option:focus-within { outline: 2px solid var(--quiz-accent); outline-offset: 3px; }
-.answer-option.correct { background: #edf8f2; border-color: #3c8a65; }
+.answer-option.correct { background: #f3eff6; border-color: #683096; }
 .answer-option.incorrect { background: #fff4e5; border-color: #a46e29; }
 fieldset:disabled .answer-option { cursor: default; }
-.feedback { margin-top: 18px; padding: 18px; background: #edf8f2; border: 1px solid #a8cfba; border-radius: 14px; }
+.feedback { margin-top: 18px; padding: 18px; background: #f3eff6; border: 1px solid #bea1d6; border-radius: 14px; }
 .feedback.incorrect { background: #fff5e6; border-color: #e4c89f; }
 .feedback h2 { margin: 0; }
 .feedback p { margin: 8px 0 0; }
@@ -318,7 +324,7 @@ fieldset:disabled .answer-option { cursor: default; }
 .review-item { border-top: 1px solid var(--quiz-line); }
 .review-item summary { padding: 15px 0; cursor: pointer; }
 .review-item summary > span:first-child { font-weight: 650; }
-.answer-tag { display: inline-block; margin-inline-start: 8px; padding: 3px 9px; border-radius: 20px; background: #e5f4eb; color: #23583e; font-size: .8125rem; font-weight: 700; }
+.answer-tag { display: inline-block; margin-inline-start: 8px; padding: 3px 9px; border-radius: 20px; background: #ede7f2; color: #402358; font-size: .8125rem; font-weight: 700; }
 .answer-tag.incorrect { background: #fff0d6; color: #765013; }
 
 @media (hover: hover) {

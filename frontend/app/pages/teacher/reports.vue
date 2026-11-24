@@ -84,7 +84,7 @@ async function finalise() {
 }
 </script>
 
-<template><main class="reports-page"><NuxtLink to="/teacher/dashboard">← Teacher dashboard</NuxtLink><h1>Finalise term reports</h1><p>Select the sub-strands required for this term. Each learner must have an assessment from you for every selected sub-strand before a code can be issued.</p>
+<template><main class="reports-page"><NuxtLink to="/teacher/dashboard">← Teacher dashboard</NuxtLink><h1>Parent access and term reports</h1><p>Saving new or changed assessments updates parent progress and queues an SMS when a valid parent contact and SMS service are configured. Use this page to issue or replace an access code manually. A valid code opens the latest available term and the learner's previous terms from you.</p><p>Select the sub-strands to include for this term. Each learner must have an assessment from you for every selected sub-strand before a code can be issued here.</p>
   <p v-if="classError || sessionError" class="error" role="alert">{{ classError?.data?.statusMessage || sessionError?.data?.statusMessage }}</p>
   <template v-else-if="teacher">
     <form @submit.prevent="checkReadiness"><fieldset :disabled="busy || !!confirming"><legend>Term requirements</legend>
@@ -92,7 +92,17 @@ async function finalise() {
       <p v-if="!classData?.classes.length">No classes are assigned to you.</p>
       <label for="report-term">Term</label><select id="report-term" v-model="termNumber"><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select>
       <label for="report-year">Year</label><input id="report-year" v-model.number="year" type="number" min="2000" max="2099" required>
-      <div v-for="area in areas" :key="area.id"><h2>{{ area.name }}</h2><div v-for="strand in area.strands" :key="strand.id"><h3>{{ strand.name }}</h3><label v-for="sub in strand.sub_strands" :key="sub.id" class="sub-option"><input v-model="selected" type="checkbox" :value="sub.id">{{ sub.name }}</label></div></div>
+      <div v-if="areas.length" :key="classId" class="class-content-arrival curriculum-choices">
+        <div v-for="area in areas" :key="area.id">
+          <h2>{{ area.name }}</h2>
+          <div v-for="strand in area.strands" :key="strand.id">
+            <h3>{{ strand.name }}</h3>
+            <label v-for="sub in strand.sub_strands" :key="sub.id" class="sub-option">
+              <input v-model="selected" type="checkbox" :value="sub.id">{{ sub.name }}
+            </label>
+          </div>
+        </div>
+      </div>
       <p v-if="classId && !areas.length && !busy">No curriculum is available for this class.</p>
       <p>{{ selected.length }} sub-strands selected.</p><button :disabled="!selected.length">Check completeness and SMS status</button>
     </fieldset></form>
@@ -102,4 +112,4 @@ async function finalise() {
   </template>
 </main></template>
 
-<style scoped>.reports-page { max-width: 900px; }button:disabled { cursor: not-allowed; }.confirmation { scroll-margin: 24px; }fieldset { border: 1px solid #dce6e2; border-radius: 8px; padding: 20px; }legend { font-weight: bold; }select { width: 100%; padding: 12px; font: inherit; border: 1px solid #9cafa7; border-radius: 6px; background: white; }select:focus-visible { outline: 3px solid #e7b64d; outline-offset: 3px; }.sub-option { display: inline-flex; align-items: center; gap: 8px; margin: 6px 20px 6px 0; font-weight: normal; }.sub-option input { width: auto; }.success { padding: 12px; background: #e4f3e9; }.confirmation { border: 2px solid #176349; border-radius: 8px; padding: 20px; margin: 20px 0; }.secondary { margin-left: 12px; background: #e5ece9; color: #18342d; }article { border-top: 1px solid #dce6e2; padding: 12px 0; }</style>
+<style scoped>.reports-page { max-width: 900px; }button:disabled { cursor: not-allowed; }.confirmation { scroll-margin: 24px; }fieldset { border: 1px solid #e2d8ea; border-radius: 8px; padding: 20px; }legend { font-weight: bold; }select { width: 100%; padding: 12px; font: inherit; border: 1px solid #a889c2; border-radius: 6px; background: white; }select:focus-visible { outline: 3px solid #e7b64d; outline-offset: 3px; }.sub-option { display: inline-flex; align-items: center; gap: 8px; margin: 6px 20px 6px 0; font-weight: normal; }.sub-option input { width: auto; }.success { padding: 12px; background: #ece5f2; }.confirmation { border: 2px solid #401e5c; border-radius: 8px; padding: 20px; margin: 20px 0; }.secondary { margin-left: 12px; background: #e9e2ef; color: #271933; }article { border-top: 1px solid #e2d8ea; padding: 12px 0; }</style>

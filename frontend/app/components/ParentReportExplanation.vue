@@ -7,7 +7,7 @@ type Subject = { id: number; name: string; strands: Strand[] }
 type Level = 'EE' | 'ME' | 'AE' | 'BE'
 type GuidanceMode = 'summary' | 'home_tips'
 
-const props = defineProps<{ subjects: Subject[] }>()
+const props = defineProps<{ subjects: Subject[]; reportId?: number }>()
 const language = ref<'en' | 'sw'>('en')
 const showSummary = ref(false)
 const showTips = ref(false)
@@ -155,6 +155,7 @@ async function requestIntroduction(mode: GuidanceMode) {
       method: 'POST',
       signal: request.signal,
       body: {
+        report_id: props.reportId,
         mode,
         language: language.value,
         ...(home ? { subject_id: Number(subjectId.value), strand_id: Number(strandId.value), activity_reference: reference || undefined } : {}),

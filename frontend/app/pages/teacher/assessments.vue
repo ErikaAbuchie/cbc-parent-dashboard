@@ -107,7 +107,7 @@ async function saveAssessments() {
   fieldErrors.value = []
   message.value = ''
   try {
-    const result = await $fetch<{ saved_count: number }>(`/api/teacher/classes/${classId.value}/assessments`, {
+    const result = await $fetch<{ saved_count: number; notifications_queued: number }>(`/api/teacher/classes/${classId.value}/assessments`, {
       method: 'POST', body: { sub_strand_id: Number(subStrandId.value), term: term.value,
         assessments: rows.value.map(row => ({ student_id: row.id, competency_level: row.competency_level, remarks: row.remarks.trim() || null })) }
     })
@@ -115,7 +115,7 @@ async function saveAssessments() {
     const persisted = await $fetch<{ assessments: Rating[] }>(`/api/teacher/classes/${classId.value}/assessments`, { query: { sub_strand_id: subStrandId.value, term: term.value } })
     saved.value = persisted.assessments
     populateRows()
-    message.value = `${result.saved_count} assessments saved and reloaded.`
+    message.value = `${result.saved_count} assessments saved and reloaded. Parent progress updated. ${result.notifications_queued} SMS notifications queued; delivery is not yet confirmed.`
   } catch (error) { await showError(error) }
   finally { working.value = false }
 }
@@ -151,6 +151,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
     <NuxtLink class="manage-link" to="/teacher/students">Manage students</NuxtLink>
     <h1>Assessment entry</h1>
     <p>Choose a class, curriculum topic, and term. Record one competency rating per learner.</p>
+    <p>Saving new or changed ratings makes them available in parent progress and queues an SMS when messaging is configured. Saving unchanged ratings does not send another notification.</p>
     <template v-if="teacher?.school_id && !classError">
       <form @submit.prevent="loadAssessments">
         <fieldset :disabled="locked">
@@ -175,7 +176,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
         <h2>{{ term }} · {{ subStrands.find(sub => String(sub.id) === subStrandId)?.name }}</h2>
         <p class="level-key"><span v-for="level in levels" :key="level.code"><strong>{{ level.code }}</strong>: {{ level.label }}</span></p>
         <p v-if="!rows.length">This class has no learners yet.</p>
-        <form v-else @submit.prevent="saveAssessments">
+        <form v-else class="class-content-arrival" @submit.prevent="saveAssessments">
           <fieldset :disabled="working">
             <legend>Learner ratings</legend>
             <div class="table-scroll">
@@ -214,23 +215,23 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 .assessment-page { max-width: 1100px; }
 .manage-link { float: right; }
 .history-button { padding: 7px 12px; margin: 6px 0 6px 12px; }
-fieldset { border: 1px solid #dce6e2; border-radius: 8px; padding: 16px; min-width: 0; }
+fieldset { border: 1px solid #e2d8ea; border-radius: 8px; padding: 16px; min-width: 0; }
 legend { font-weight: bold; padding: 0 8px; }
 .selectors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 20px; }
-select, textarea { width: 100%; padding: 12px; border: 1px solid #9cafa7; border-radius: 6px; font: inherit; background: white; color: inherit; }
+select, textarea { width: 100%; padding: 12px; border: 1px solid #a889c2; border-radius: 6px; font: inherit; background: white; color: inherit; }
 select:focus-visible, textarea:focus-visible { outline: 3px solid #e7b64d; outline-offset: 3px; }
 .table-scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 660px; }
 caption { text-align: left; padding: 12px 0; }
-th, td { padding: 12px; border-bottom: 1px solid #dce6e2; text-align: left; vertical-align: top; }
+th, td { padding: 12px; border-bottom: 1px solid #e2d8ea; text-align: left; vertical-align: top; }
 small { display: block; font-weight: normal; margin-top: 6px; }
 .level-key { display: flex; flex-wrap: wrap; gap: 8px 20px; }
-.secondary { background: #e5ece9; color: #18342d; margin-left: 12px; }
-.success { background: #e4f3e9; padding: 12px; border-radius: 6px; }
+.secondary { background: #e9e2ef; color: #271933; margin-left: 12px; }
+.success { background: #ece5f2; padding: 12px; border-radius: 6px; }
 .field-error { display: block; margin-top: 4px; }
 li { margin-bottom: 10px; line-height: 1.5; }
 @media (max-width: 700px) { .selectors { grid-template-columns: 1fr; } }
 @media (max-width: 700px) {
-  .ratings-table { display: block; min-width: 0; }.ratings-table caption { display: block; }.ratings-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }.ratings-table tbody { display: block; }.ratings-table tr { display: block; margin-bottom: 18px; border: 1px solid #dce6e2; border-radius: 12px; padding: 10px; background: #fcfefd; }.ratings-table th, .ratings-table td { display: block; width: 100%; border: 0; padding: 8px; }.ratings-table td:before { content: attr(data-label); display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 8px; color: #5f7d71; }.secondary { margin-left: 0; margin-right: 8px; }
+  .ratings-table { display: block; min-width: 0; }.ratings-table caption { display: block; }.ratings-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }.ratings-table tbody { display: block; }.ratings-table tr { display: block; margin-bottom: 18px; border: 1px solid #e2d8ea; border-radius: 12px; padding: 10px; background: #fcfefd; }.ratings-table th, .ratings-table td { display: block; width: 100%; border: 0; padding: 8px; }.ratings-table td:before { content: attr(data-label); display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 8px; color: #724696; }.secondary { margin-left: 0; margin-right: 8px; }
 }
 </style>
