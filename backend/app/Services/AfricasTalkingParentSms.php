@@ -37,6 +37,24 @@ class AfricasTalkingParentSms implements ParentSmsSender
             $diagnostic = ['exception_type' => get_class($error)];
             if ($error instanceof \GuzzleHttp\Exception\RequestException) {
                 $diagnostic['http_status'] = $error->getResponse()?->getStatusCode();
+                // Classify only known phrases. Never log the response body:
+                // providers and intermediaries may echo credentials or SMS text.
+                $body = strtolower((string) $error->getResponse()?->getBody());
+                $diagnostic['reason_category'] = 'unrecognised';
+                foreach ([
+                    'invalid_api_key' => '/invalid.{0,20}api.?key|api.?key.{0,20}invalid/',
+                    'authentication' => '/authentication|unauthorized|invalid username|invalid credentials/',
+                    'ip_restriction' => '/ip address|ip not|whitelist|allowlist/',
+                    'account_restriction' => '/suspend|account.{0,30}disabled|account.{0,30}inactive/',
+                    'insufficient_balance' => '/insufficient|not enough credit/',
+                    'edge_security' => '/cloudflare|captcha|access denied|request blocked/',
+                    'invalid_recipient' => '/invalid.{0,20}phone|invalid.{0,20}recipient/',
+                ] as $category => $pattern) {
+                    if (preg_match($pattern, $body)) {
+                        $diagnostic['reason_category'] = $category;
+                        break;
+                    }
+                }
             }
             if ($error instanceof \GuzzleHttp\Exception\ConnectException) {
                 $diagnostic['curl_code'] = (int) ($error->getHandlerContext()['errno'] ?? 0);

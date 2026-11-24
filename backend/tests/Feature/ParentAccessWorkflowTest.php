@@ -183,7 +183,7 @@ class ParentAccessWorkflowTest extends TestCase
     {
         $access = $this->issue();
         $sender = \Mockery::mock(ParentSmsSender::class);
-        $sender->shouldReceive('send')->once()->with('+254700000000', \Mockery::on(fn ($message) => str_contains($message, '000042') && str_contains($message, '/parent/login')));
+        $sender->shouldReceive('send')->once()->with('+254700000000', \Mockery::on(fn ($message) => str_contains($message, '000042') && str_contains($message, 'admission number') && !str_contains($message, 'http')));
         $job = new SendParentAccessCode($access->id, '000042');
         $job->handle($sender);
         $job->handle($sender);

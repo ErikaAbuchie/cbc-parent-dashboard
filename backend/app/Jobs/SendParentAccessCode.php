@@ -31,8 +31,7 @@ class SendParentAccessCode implements ShouldQueue, ShouldBeEncrypted
         }
         $access->increment('sms_attempts');
         try {
-            $url = rtrim(config('services.parent_access.frontend_url'), '/').'/parent/login';
-            $sms->send($student->parent_phone_number, "CBC report for {$access->term}. Access code: {$this->code}. Use the learner's admission number at {$url}. Code expires in 30 days.");
+            $sms->send($student->parent_phone_number, "CBC report for {$access->term}. Access code: {$this->code}. Enter this code and the admission number on the parent portal. Code expires in 30 days.");
             $access->update(['sms_status' => 'accepted', 'sms_accepted_at' => now()]);
         } catch (Throwable) {
             $access->update(['sms_status' => 'retrying']);
