@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const section = computed(() => ['subjects', 'trends', 'guidance'].includes(String(route.query.section)) ? String(route.query.section) : 'overview')
-const sectionNames: Record<string, string> = { overview: 'Overview', subjects: 'Subject results', trends: 'Trends', guidance: 'Guidance' }
+const sectionNames: Record<string, string> = { overview: 'Overview', subjects: 'Subject results', trends: 'Trends', guidance: 'AI support' }
 useHead({ title: computed(() => `${sectionNames[section.value]} | CBC Parent Insight`) })
 const sectionHeading = ref<HTMLElement | null>(null)
 watch(section, async () => {
@@ -19,9 +19,10 @@ const selectedReport = ref('')
 const reportQuery = computed(() => selectedReport.value ? { report_id: selectedReport.value } : {})
 const { data: report, error, refresh, status } = await useFetch('/api/parent/report', { query: reportQuery })
 const lastChecked = ref('')
+const activeAIRequests = useState<number>('parent-ai-active', () => 0)
 let refreshTimer: ReturnType<typeof setInterval> | undefined
 async function refreshProgress() {
-  if (document.visibilityState === 'hidden' || status.value === 'pending') return
+  if (document.visibilityState === 'hidden' || status.value === 'pending' || activeAIRequests.value > 0) return
   await refresh()
   if (!error.value) lastChecked.value = new Date().toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })
 }

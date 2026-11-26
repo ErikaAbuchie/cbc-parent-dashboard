@@ -5,14 +5,15 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event) || {}
   try {
     return await $fetch(`${useRuntimeConfig(event).apiBase}/parent/explanation`, {
-      method: 'POST', body: { report_id: body.report_id, mode: body.mode ?? 'summary', language: body.language, subject_id: body.subject_id, strand_id: body.strand_id, activity_reference: body.activity_reference },
-      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` }, timeout: 135000
+      method: 'POST', body: { report_id: body.report_id, mode: body.mode ?? 'summary', language: body.language, subject_id: body.subject_id, strand_id: body.strand_id, sub_strand_id: body.sub_strand_id },
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` }, timeout: 195000
     })
   } catch (error: any) {
     const status = error.response?.status
     if (status === 401) deleteCookie(event, 'parent_session', { path: '/' })
-    throw createError({ statusCode: [401, 404, 422, 429].includes(status) ? status : 502,
+    throw createError({ statusCode: [401, 404, 409, 422, 429].includes(status) ? status : 502,
       statusMessage: status === 401 ? 'Your session has ended. Please verify your code again.'
+        : status === 409 ? 'Results changed while AI was working. Refresh the results and generate again.'
         : status === 404 || status === 422 ? 'Choose a subject and strand included in this report.'
         : status === 429 ? 'Please wait a minute, then try again. An explanation may already be in progress.'
         : 'Cannot load the explanation. Your recorded results are still available.' })

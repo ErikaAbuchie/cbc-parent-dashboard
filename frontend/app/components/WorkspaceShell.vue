@@ -17,7 +17,7 @@ const links = computed(() => teacher.value ? [
   { to: '/parent/report', label: 'Overview', icon: 'home' },
   { to: '/parent/report?section=subjects', label: 'Subject results', icon: 'assessment' },
   { to: '/parent/report?section=trends', label: 'Trends', icon: 'trend' },
-  { to: '/parent/report?section=guidance', label: 'Guidance', icon: 'leaf' },
+  { to: '/parent/report?section=guidance', label: 'AI support', icon: 'leaf' },
   { to: '/parent/practice', label: 'Practice', icon: 'practice' },
   { to: '/parent/settings', label: 'Settings', icon: 'settings' },
 ])
@@ -74,7 +74,10 @@ function trapKeys(event: KeyboardEvent) {
     <div class="workspace-body" :inert="mobileOpen">
       <header class="workspace-header">
         <button ref="menuButton" class="icon-button menu-toggle" aria-label="Open navigation" :aria-expanded="mobileOpen" aria-controls="workspace-nav" @click="mobileOpen = true"><HubIcon name="menu" /></button>
-        <div class="header-label"><span>{{ teacher ? 'Teacher workspace' : 'Family workspace' }}</span><strong>{{ title }}</strong></div>
+        <div class="header-label">
+          <span>{{ teacher ? 'Teacher workspace' : 'Family workspace' }}</span>
+          <strong :key="title" class="workspace-title">{{ title }}</strong>
+        </div>
         <span class="header-emblem"><HubIcon :name="links.find(link => isActive(link.to))?.icon || 'leaf'" /></span>
       </header>
       <div id="workspace-content" class="workspace-content" tabindex="-1"><slot /></div>

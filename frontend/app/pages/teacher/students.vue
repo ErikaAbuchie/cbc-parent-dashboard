@@ -142,7 +142,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
           <button :disabled="busy" @click="confirmMembershipChange">{{ membershipChange.restore ? 'Confirm restore' : 'Confirm removal' }}</button>
           <button class="secondary" :disabled="busy" @click="membershipChange = null">Cancel change</button>
         </section>
-        <form @submit.prevent="saveStudent"><fieldset :disabled="busy || !!membershipChange">
+        <form class="class-content-arrival" @submit.prevent="saveStudent"><fieldset :disabled="busy || !!membershipChange">
           <label for="student-name">Full name</label><input id="student-name" :value="displayName(form.full_name)" @input="form.full_name = ($event.target as HTMLInputElement).value" maxlength="255" required>
           <label for="student-admission">Admission number</label><input id="student-admission" v-model="form.admission_number" maxlength="50" required>
           <label for="student-phone">Parent phone number</label><input id="student-phone" v-model="form.parent_phone_number" type="tel" placeholder="+2547XXXXXXXX" :required="!editingId" maxlength="20" aria-describedby="phone-help">
@@ -164,16 +164,16 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 <style scoped>
 .student-page { max-width: 900px; }
 .assessment-link { float: right; }
-select { width: 100%; padding: 12px; font: inherit; border: 1px solid #9cafa7; border-radius: 6px; background: white; }
+select { width: 100%; padding: 12px; font: inherit; border: 1px solid #a889c2; border-radius: 6px; background: white; }
 select:focus-visible { outline: 3px solid #e7b64d; outline-offset: 3px; }
-fieldset { border: 1px solid #dce6e2; border-radius: 8px; padding: 20px; }
-.secondary { background: #e5ece9; color: #18342d; margin-left: 12px; }
+fieldset { border: 1px solid #e2d8ea; border-radius: 8px; padding: 20px; }
+.secondary { background: #e9e2ef; color: #271933; margin-left: 12px; }
 .remove { background: #942c2c; margin-left: 12px; }
 .roster { list-style: none; padding: 0; }
-.roster li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid #dce6e2; }
+.roster li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid #e2d8ea; }
 .roster button { margin-top: 0; }
 small { display: block; margin-top: 6px; }
-.success { padding: 12px; border-radius: 6px; background: #e4f3e9; }
-.confirmation { padding: 20px; margin: 20px 0; border: 2px solid #176349; border-radius: 8px; background: #f2f6f5; scroll-margin-top: 96px; }
-.confirmation:focus-visible { outline: 2px solid #176349; outline-offset: 4px; }
+.success { padding: 12px; border-radius: 6px; background: #ece5f2; }
+.confirmation { padding: 20px; margin: 20px 0; border: 2px solid #401e5c; border-radius: 8px; background: #f4f1f7; scroll-margin-top: 96px; }
+.confirmation:focus-visible { outline: 2px solid #401e5c; outline-offset: 4px; }
 </style>

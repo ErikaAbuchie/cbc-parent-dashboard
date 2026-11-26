@@ -33,14 +33,14 @@ const unrecognised = computed(() => total.value - rows.value.reduce((sum, row) =
 </template>
 
 <style scoped>
-.competency-summary { margin: 24px 0; padding: 20px; border: 1px solid #dce6e2; border-radius: 12px; background: #f7faf9; }
+.competency-summary { margin: 24px 0; padding: 20px; border: 1px solid #e2d8ea; border-radius: 12px; background: #f9f7fa; }
 h2 { margin-top: 0; }
 .level-list { list-style: none; padding: 0; margin: 20px 0; }
 li + li { margin-top: 20px; }
 .level-label { display: flex; justify-content: space-between; gap: 12px; line-height: 1.5; }
 .count { white-space: nowrap; font-weight: 600; }
-.bar-track { height: 16px; margin-top: 6px; background: #eaf3ee; border-radius: 4px; overflow: hidden; }
-.bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #12634f 0%, #258c6c 55%, #64c8a0 100%); }
+.bar-track { height: 16px; margin-top: 6px; background: #efeaf3; border-radius: 4px; overflow: hidden; }
+.bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #3e1b5a 0%, #5d2988 55%, #9c5dcf 100%); }
 .scope-note { margin-bottom: 0; font-size: 0.875rem; }
 @media print {
   .competency-summary { break-inside: avoid; background: #fff; border-color: #999; padding: 12px; }

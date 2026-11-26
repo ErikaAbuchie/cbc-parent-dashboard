@@ -7,7 +7,7 @@ use App\Models\ParentAccess;
 use App\Models\ParentSession;
 use App\Models\Student;
 use App\Models\TermReport;
-use App\Services\AIService;
+use App\Services\ParentGuidanceGenerator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -77,49 +77,54 @@ class ParentAccessController extends Controller
         ])->header('Cache-Control', 'no-store');
     }
 
-    public function explanation(Request $request, AIService $ai)
+    public function explanation(Request $request, ParentGuidanceGenerator $ai)
     {
         [$session, $student, $report] = $this->context($request);
         $data = $request->validate(['mode' => ['sometimes', 'required', 'in:summary,home_tips'],
             'language' => ['sometimes', 'required', 'in:en,sw'],
-            'activity_reference' => ['exclude_unless:mode,home_tips', 'nullable', 'string', 'max:750'],
+            'sub_strand_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'subject_id' => ['required_if:mode,home_tips', 'integer', 'min:1'],
             'strand_id' => ['required_if:mode,home_tips', 'integer', 'min:1']]);
         $mode = $data['mode'] ?? 'summary';
-        $language = $data['language'] ?? null;
-        $activityReference = $data['activity_reference'] ?? null;
+        $language = $data['language'] ?? 'en';
         // Ignore submitted ratings, learner IDs and prompts: use only authorised records.
         $query = Assessment::where('student_id', $student->id)->where('user_id', $report->user_id)
             ->where('term', $report->term)->whereIn('sub_strand_id', $report->sub_strand_ids)
             ->with('subStrand.strand.learningArea');
         if ($mode === 'home_tips') {
             $query->whereHas('subStrand.strand', fn ($q) => $q->whereKey($data['strand_id'])->where('learning_area_id', $data['subject_id']));
+            if (isset($data['sub_strand_id'])) $query->where('sub_strand_id', $data['sub_strand_id']);
+        } elseif (isset($data['subject_id'])) {
+            $query->whereHas('subStrand.strand', fn ($q) => $q->where('learning_area_id', $data['subject_id']));
         }
         $ratings = $query->orderBy('sub_strand_id')->get()
             ->map(fn ($a) => ['learning_area' => $a->subStrand->strand->learningArea->name,
                 'strand' => $a->subStrand->strand->name,
                 'sub_strand' => $a->subStrand->name, 'competency_level' => $a->competency_level])->all();
-        abort_if($mode === 'home_tips' && ! $ratings, 404, 'This subject and strand have no assessed results in your report.');
-        $cacheKey = 'parent-explanation:v8:'.hash('sha256', json_encode([$mode, $language, $activityReference, $data['subject_id'] ?? null, $data['strand_id'] ?? null, $report->id, $student->schoolClass->grade_level,
+        abort_if(($mode === 'home_tips' || isset($data['subject_id'])) && ! $ratings, 404, 'This subject and strand have no assessed results in your report.');
+        $cacheKey = ParentGuidanceGenerator::VERSION.':'.hash('sha256', json_encode([$mode, $language, $data['sub_strand_id'] ?? null, $data['subject_id'] ?? null, $data['strand_id'] ?? null, $report->id, $student->schoolClass->grade_level,
             config('services.ollama'), $ratings], JSON_THROW_ON_ERROR));
         if ($cached = Cache::get($cacheKey)) return response()->json($cached)->header('Cache-Control', 'no-store');
         $limitKey = 'parent-explanation:'.$session->parent_access_id;
-        abort_if(RateLimiter::tooManyAttempts($limitKey, 3), 429, 'Please wait a minute before requesting another explanation.');
+        abort_if(RateLimiter::tooManyAttempts($limitKey, 12), 429, 'Please wait a minute before requesting another explanation.');
         RateLimiter::hit($limitKey, 60);
-        $lock = Cache::lock($cacheKey.':lock', 130);
+        $timeout = max(15, (int) config('services.ollama.timeout', 120));
+        if (function_exists('set_time_limit')) set_time_limit($timeout + 30);
+        $lock = Cache::lock($cacheKey.':lock', $timeout + 15);
         abort_unless($lock->get(), 429, 'An explanation is already being prepared. Please try again shortly.');
         try {
-            $result = $language === null
-                ? $ai->explainReport($ratings, (int) $student->schoolClass->grade_level, $mode)
-                : $ai->rewriteIntroduction($ratings, $mode, $language, $activityReference);
-            if ($result['source'] === 'model' && ($activityReference === null || isset($result['activity']))) {
-                Cache::put($cacheKey, $result, 600);
-            }
+            $result = $ai->generate($ratings, (int) $student->schoolClass->grade_level, $mode, $language);
         } finally {
             $lock->release();
         }
         // Re-check access after inference in case a teacher revoked it while waiting.
-        $this->context($request);
+        [, , $freshReport] = $this->context($request);
+        $freshRatings = $query->get()->map(fn ($a) => [
+            'learning_area' => $a->subStrand->strand->learningArea->name, 'strand' => $a->subStrand->strand->name,
+            'sub_strand' => $a->subStrand->name, 'competency_level' => $a->competency_level])->all();
+        abort_if($freshReport->id !== $report->id || $freshReport->sub_strand_ids !== $report->sub_strand_ids || $freshRatings !== $ratings,
+            409, 'Results changed while AI was working. Refresh the results and generate again.');
+        if ($result['source'] === 'model') Cache::put($cacheKey, $result, 600);
         return response()->json($result)->header('Cache-Control', 'no-store');
     }
 

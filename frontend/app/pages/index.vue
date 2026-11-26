@@ -1,3 +1,85 @@
-<script setup lang="ts">useHead({ title: 'CBC Parent Insight' })</script>
-<template><main class="welcome-page"><div class="landing-art"><img src="/images/colour-pencils.png" alt="" aria-hidden="true" /></div><span class="eyebrow">EVERY LEARNER HAS POTENTIAL</span><h1>A clearer picture.<br>A stronger connection.</h1><p>Bring school and home together around your learner's progress.</p><div class="portal-choices"><NuxtLink to="/parent/login"><span class="portal-icon"><HubIcon name="learners" /></span><span><strong>I'm a parent</strong><small>View a report with your SMS access code.</small></span><HubIcon name="arrow" /></NuxtLink><NuxtLink to="/teacher/login"><span class="portal-icon gold"><HubIcon name="assessment" /></span><span><strong>I'm a teacher</strong><small>Record evidence and connect with families.</small></span><HubIcon name="arrow" /></NuxtLink></div><p class="welcome-note"><HubIcon name="lock" />Secure access. Meaningful insight.</p></main></template>
-<style scoped>.welcome-page { max-width: 650px; overflow: hidden; }.landing-art { height: 150px; margin: -38px -38px 30px; background: #b194df; }.landing-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 73%; }.welcome-page .eyebrow { display: inline-block; }.welcome-page h1 { margin-top: 14px; font-size: clamp(1.6875rem, 4vw, 2.25rem); }.portal-choices { display: grid; gap: 12px; margin-top: 26px; }.portal-choices a { display: flex; align-items: center; gap: 14px; border: 1px solid #e6d9f1; border-radius: 12px; padding: 18px 14px; color: #604080; text-decoration: none; }.portal-choices a:hover { background: #f7f0fc; border-color: #b38ad5; }.portal-choices a>svg { width: 18px; height: 18px; margin-left: auto; flex-shrink: 0; }.portal-choices strong { display: block; }.portal-choices small { display: block; line-height: 1.5; font-size: 0.75rem; margin-top: 6px; }.portal-icon { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px; background: #eee1fa; }.portal-icon svg { width: 24px; height: 24px; }.portal-icon.gold { background: #eee1fa; color: #7540b5; }.welcome-note { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 26px; font-size: 0.75rem; }.welcome-note svg { width: 15px; height: 15px; }@media(max-width:600px) { .landing-art { margin: -30px -23px 26px; height: 135px; } }</style>
+<script setup lang="ts">
+useHead({ title: 'CBC Parent Insight' })
+
+const portals = [
+  { to: '/parent/login', title: 'I’m a parent', description: 'View your learner’s report with your SMS access code.', icon: 'learners' },
+  { to: '/teacher/login', title: 'I’m a teacher', description: 'Record assessments and share progress with families.', icon: 'assessment' },
+]
+</script>
+
+<template>
+  <main class="welcome-page">
+    <div class="landing-feature">
+      <div class="landing-copy">
+        <h1><span>See how your</span><span>learner is growing.</span></h1>
+        <p>Follow progress at school and find ways to support learning at home.</p>
+      </div>
+      <div class="landing-art">
+        <img src="/images/colour-pencils.png" alt="" fetchpriority="high">
+      </div>
+    </div>
+    <div class="portal-choices">
+      <NuxtLink v-for="portal in portals" :key="portal.to" :to="portal.to">
+        <span class="portal-icon"><HubIcon :name="portal.icon" /></span>
+        <span><strong>{{ portal.title }}</strong><small>{{ portal.description }}</small></span>
+        <HubIcon name="arrow" />
+      </NuxtLink>
+    </div>
+  </main>
+</template>
+
+<style scoped>
+.public-shell .welcome-page {
+  max-width: 72rem;
+  padding: 0;
+  overflow: hidden;
+}
+
+.landing-feature {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  background: #f4ebfb;
+}
+
+.landing-copy { padding: clamp(1.5rem, 5vw, 4.5rem); }
+.public-shell .landing-copy h1 {
+  margin: 0;
+  color: #31174a;
+  font-size: clamp(2rem, 4.8vw, 4.4rem);
+  line-height: 1.04;
+  letter-spacing: -.055em;
+}
+.landing-copy h1 span { display: block; animation: headline-arrival 460ms var(--portal-ease) both; }
+.landing-copy h1 span + span { color: #713ca5; animation-delay: 75ms; }
+.landing-copy p { max-width: 35ch; margin: 1.25rem 0 0; color: #584467; font-size: clamp(1rem, 1.4vw, 1.2rem); }
+
+.landing-art { position: relative; min-height: 13rem; overflow: hidden; background: #b194df; }
+.landing-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center bottom; }
+
+.portal-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.portal-choices a {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: clamp(1.15rem, 3vw, 2rem);
+  color: #573174;
+  text-decoration: none;
+}
+.portal-choices a + a { border-inline-start: 1px solid #e8dbf2; }
+.portal-choices a > svg { width: 1.25rem; margin-inline-start: auto; flex-shrink: 0; }
+.portal-choices strong { display: block; font-size: 1.15rem; }
+.portal-choices small { display: block; margin-top: .35rem; color: #604e6f; font-size: .9375rem; line-height: 1.45; }
+.portal-icon { display: grid; place-items: center; width: 2.75rem; aspect-ratio: 1; flex-shrink: 0; border-radius: 12px; background: #eee1fa; }
+.portal-icon svg { width: 1.4rem; }
+
+@keyframes headline-arrival {
+  from { opacity: 0; transform: translateY(.45em); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 680px) {
+  .landing-feature, .portal-choices { grid-template-columns: 1fr; }
+  .landing-art { min-height: clamp(7rem, 30vw, 11rem); }
+  .portal-choices a + a { border-inline-start: 0; border-top: 1px solid #e8dbf2; }
+}
+</style>

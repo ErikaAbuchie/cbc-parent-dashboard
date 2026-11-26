@@ -12,6 +12,13 @@ Route::post('/teacher/login', [TeacherAuthController::class, 'login'])->middlewa
 Route::post('/teacher/logout', [TeacherAuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->prefix('teacher')->group(function () {
+    Route::get('/classes/{classId}/practice-exercises', [\App\Http\Controllers\TeacherPracticeController::class, 'index'])->whereNumber('classId');
+    Route::post('/classes/{classId}/practice-exercises', [\App\Http\Controllers\TeacherPracticeController::class, 'store'])->whereNumber('classId');
+    Route::patch('/classes/{classId}/practice-exercises/{id}', [\App\Http\Controllers\TeacherPracticeController::class, 'update'])->whereNumber(['classId', 'id']);
+    Route::delete('/classes/{classId}/practice-exercises/{id}', [\App\Http\Controllers\TeacherPracticeController::class, 'destroy'])->whereNumber(['classId', 'id']);
+    Route::post('/classes/{classId}/practice-exercises/{id}/publish', [\App\Http\Controllers\TeacherPracticeController::class, 'publish'])->whereNumber(['classId', 'id']);
+    Route::post('/classes/{classId}/practice-exercises/{id}/archive', [\App\Http\Controllers\TeacherPracticeController::class, 'archive'])->whereNumber(['classId', 'id']);
+    Route::post('/classes/{classId}/practice-exercises/{id}/duplicate', [\App\Http\Controllers\TeacherPracticeController::class, 'duplicate'])->whereNumber(['classId', 'id']);
     Route::post('/classes/{classId}/report-readiness', [TeacherTermReportController::class, 'readiness'])->whereNumber('classId');
     Route::post('/classes/{classId}/students/{studentId}/finalise-report', [TeacherTermReportController::class, 'finalise'])->whereNumber(['classId', 'studentId']);
     Route::get('/classes/{classId}/students', [TeacherStudentController::class, 'index'])->whereNumber('classId');
@@ -33,6 +40,7 @@ Route::get('/parent/practice', [\App\Http\Controllers\ParentPracticeController::
 Route::post('/parent/practice', [\App\Http\Controllers\ParentPracticeController::class, 'start']);
 Route::get('/parent/practice/{id}', [\App\Http\Controllers\ParentPracticeController::class, 'show'])->whereNumber('id');
 Route::post('/parent/practice/{id}/submit', [\App\Http\Controllers\ParentPracticeController::class, 'submit'])->whereNumber('id');
+Route::post('/parent/practice/{id}/answer', [\App\Http\Controllers\ParentPracticeController::class, 'answer'])->whereNumber('id');
 Route::post('/parent/logout', [ParentAccessController::class, 'logout']);
 
 Route::get('/user', function (Request $request) {

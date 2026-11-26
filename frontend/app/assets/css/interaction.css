@@ -12,6 +12,17 @@
   .workspace .workspace-role { margin-top: auto; }
   .workspace .sidebar nav { margin-bottom: 24px; }
   .workspace .header-emblem { margin-inline-start: auto; }
+  .workspace-title { display: block; animation: page-arrival 200ms var(--portal-ease) both; }
+
+  .workspace .report-view .dashboard-visual-grid > section,
+  .workspace .report-view .dashboard-next-grid > section {
+    animation: page-arrival 300ms var(--portal-ease) both;
+  }
+
+  .workspace .report-view .dashboard-visual-grid > section:nth-child(2),
+  .workspace .report-view .dashboard-next-grid > section:nth-child(2) { animation-delay: 45ms; }
+
+  .workspace .report-view .dashboard-visual-grid > section:nth-child(3) { animation-delay: 90ms; }
 
   .sidebar nav a, .mobile-bottom-nav a {
     transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
@@ -40,6 +51,75 @@
     box-shadow: 0 0 0 3px #9563cb28;
   }
 
+  .workspace select:not([multiple]):not([size]) {
+    border-radius: 12px;
+    cursor: pointer;
+  }
+
+  .workspace select:not([multiple]):not([size]):disabled { cursor: not-allowed; }
+
+  @supports (appearance: base-select) {
+    .workspace select:not([multiple]):not([size]),
+    .workspace select:not([multiple]):not([size])::picker(select) {
+      appearance: base-select;
+    }
+
+    .workspace select:not([multiple]):not([size])::picker(select) {
+      margin-block: 6px;
+      padding: 6px;
+      max-block-size: min(20rem, 50dvh);
+      overflow-y: auto;
+      border: 1px solid #d8c6ec;
+      border-radius: 14px;
+      background: #fff;
+      color: #30203f;
+      box-shadow: 0 12px 28px #34204c26;
+    }
+
+    .workspace select:not([multiple]):not([size])::picker-icon {
+      color: #713ca5;
+      transition: rotate 190ms var(--portal-ease);
+    }
+
+    .workspace select:not([multiple]):not([size]) option {
+      min-height: 44px;
+      padding: 8px 12px;
+      gap: 8px;
+      border-radius: 8px;
+      white-space: normal;
+    }
+
+    .workspace select:not([multiple]):not([size]) option:checked { background: #efe4fa; font-weight: 650; }
+    .workspace select:not([multiple]):not([size]) option:is(:hover, :focus-visible) { background: #e4d1f7; }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .workspace select:not([multiple]):not([size]):open::picker(select) {
+        animation: page-arrival 190ms var(--portal-ease) both;
+      }
+      .workspace select:not([multiple]):not([size]):open::picker-icon { rotate: 180deg; }
+    }
+  }
+
+  .workspace .class-content-arrival,
+  .workspace :is(.exercise-list, .exercise-editor, .exercise-preview, .action-confirmation, .student-page .confirmation) {
+    animation: page-arrival 250ms var(--portal-ease) both;
+  }
+
+  .workspace .curriculum-choices .sub-option {
+    min-height: 44px;
+    margin: 4px 6px 4px 0;
+    padding: 6px 12px;
+    border: 1px solid #e2d5ee;
+    border-radius: 10px;
+    background: #fbf8fe;
+    transition: background-color 160ms ease, border-color 160ms ease;
+  }
+
+  .workspace .curriculum-choices .sub-option:has(:checked) {
+    border-color: #9a6aca;
+    background: #eee2fa;
+  }
+
   .dashboard-shortcuts a, .support-subject-list a { transition: background-color 180ms ease; }
   .dashboard-shortcuts a:focus-visible, .support-subject-list a:focus-visible { background: #f6effc; }
 
@@ -48,12 +128,15 @@
   }
   .public-shell .portal-choices > a > svg { transition: transform 180ms var(--portal-ease); }
   .public-shell .portal-choices > a:focus-visible { background: #f5edff; }
+  .public-shell .portal-choices .portal-icon { transition: transform 200ms var(--portal-ease), background-color 200ms ease; }
+  .public-shell .portal-choices > a:focus-visible .portal-icon { background: #e5d1f6; }
 
   @media (hover: hover) {
     .sidebar nav a:hover svg { transform: translateX(2px); }
     .dashboard-shortcuts a:hover, .support-subject-list a:hover { background: #f6effc; }
     .public-shell .portal-choices > a:hover { background: #f5edff; border-color: #cfb4e8; }
     .public-shell .portal-choices > a:hover > svg { transform: translateX(4px); }
+    .public-shell .portal-choices > a:hover .portal-icon { transform: translateY(-2px); background: #e5d1f6; }
   }
 }
 
@@ -77,5 +160,6 @@
 @media (prefers-reduced-motion: reduce) {
   .workspace button:active, .public-shell button:active,
   .workspace .button-link:active, .public-shell .button-link:active,
-  .public-shell .portal-choices > a:hover > svg { transform: none; }
+  .public-shell .portal-choices > a:hover > svg,
+  .public-shell .portal-choices > a:hover .portal-icon { transform: none; }
 }

@@ -6,6 +6,11 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\ConnectionException;
 use Throwable;
 
+/**
+ * Historical evaluation helpers and rubric wording.
+ * The parent portal generates answers through ParentGuidanceGenerator;
+ * it does not call these legacy fallback or introduction-copying methods.
+ */
 class AIService
 {
     public const MEANINGS = [

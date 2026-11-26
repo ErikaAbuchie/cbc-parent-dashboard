@@ -15,21 +15,21 @@ defineProps<{ learnerName: string; compact?: boolean }>()
 </template>
 
 <style scoped>
-.parent-welcome { position: relative; isolation: isolate; overflow: hidden; min-height: 270px; margin-bottom: 22px; border: 1px solid #d9e9df; border-radius: 20px; background: linear-gradient(110deg,#edf8ee,#e0f2ed); }
+.parent-welcome { position: relative; isolation: isolate; overflow: hidden; min-height: 270px; margin-bottom: 22px; border: 1px solid #e2d8ea; border-radius: 20px; background: linear-gradient(110deg,#f3eff6,#eae2f0); }
 .welcome-brain { position: absolute; z-index: 0; right: 14px; top: 0; width: 36%; height: 100%; object-fit: contain; pointer-events: none; animation: brain-arrive 1.2s ease-out both; }
-.parent-welcome::after { content: ''; position: absolute; z-index: -1; inset: 0; pointer-events: none; background: linear-gradient(90deg,#edf8eef7,#edf8eed9 36%,#edf8ee20 75%); }
+.parent-welcome::after { content: ''; position: absolute; z-index: -1; inset: 0; pointer-events: none; background: linear-gradient(90deg,#f3eff6f7,#f3eff6d9 36%,#f3eff620 75%); }
 .welcome-copy { position: relative; z-index: 1; padding: 32px; max-width: 640px; animation: welcome-arrive .8s ease-out both; }
 .eyebrow { display: block; font-size: 0.6875rem; letter-spacing: 1.6px; line-height: 1.7; }
-.welcome-copy h2 { margin: 17px 0; font-size: clamp(1.8125rem,3.4vw,2.625rem); line-height: 1.15; letter-spacing: -1px; color: #123c37; }
-.welcome-copy p { max-width: 440px; color: #567b6c; font-size: 0.875rem; line-height: 1.8; overflow-wrap: anywhere; }.welcome-copy strong { color: #315d4c; font-weight: 600; }
-.welcome-link { display: inline-flex; align-items: center; gap: 14px; margin-top: 10px; color: #007c62; font-size: 0.8125rem; font-weight: 700; text-decoration: none; }.welcome-link svg { width: 18px; height: 18px; transition: transform .25s ease; }.welcome-link:hover svg { transform: translateX(3px); }.welcome-link:focus-visible { outline: 2px solid #16785b; outline-offset: 6px; border-radius: 3px; }
+.welcome-copy h2 { margin: 17px 0; font-size: clamp(1.8125rem,3.4vw,2.625rem); line-height: 1.15; letter-spacing: -1px; color: #291737; }
+.welcome-copy p { max-width: 440px; color: #6d4091; font-size: 0.875rem; line-height: 1.8; overflow-wrap: anywhere; }.welcome-copy strong { color: #4a2a64; font-weight: 600; }
+.welcome-link { display: inline-flex; align-items: center; gap: 14px; margin-top: 10px; color: #411d5f; font-size: 0.8125rem; font-weight: 700; text-decoration: none; }.welcome-link svg { width: 18px; height: 18px; transition: transform .25s ease; }.welcome-link:hover svg { transform: translateX(3px); }.welcome-link:focus-visible { outline: 2px solid #4b216d; outline-offset: 6px; border-radius: 3px; }
 .welcome-landscape :deep(circle) { transform-box: fill-box; transform-origin: center; animation: sunshine 4.5s ease-in-out both; }
 .welcome-landscape :deep(ellipse) { transform-box: fill-box; transform-origin: center bottom; animation: gentle-sway 4.5s ease-in-out both; }
 @keyframes welcome-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes landscape-settle { from { transform: translateX(7px); } to { transform: translateX(0); } }
 @keyframes sunshine { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .8; transform: scale(1.045); } }
 @keyframes gentle-sway { 0%,100% { transform: rotate(0); } 35% { transform: rotate(1.5deg); } 70% { transform: rotate(-1deg); } }
-@media(max-width:600px) { .parent-welcome { min-height: 280px; border-radius: 16px; }.welcome-copy { padding: 26px 20px; }.eyebrow { font-size: 0.5625rem; letter-spacing: 1.1px; }.welcome-copy h2 { font-size: 1.9375rem; }.welcome-copy p { max-width: 300px; font-size: 0.8125rem; }.welcome-landscape { width: 100%; opacity: .5; }.parent-welcome::after { background: linear-gradient(90deg,#edf8eef5,#edf8eec9 55%,#edf8ee55); } }
+@media(max-width:600px) { .parent-welcome { min-height: 280px; border-radius: 16px; }.welcome-copy { padding: 26px 20px; }.eyebrow { font-size: 0.5625rem; letter-spacing: 1.1px; }.welcome-copy h2 { font-size: 1.9375rem; }.welcome-copy p { max-width: 300px; font-size: 0.8125rem; }.welcome-landscape { width: 100%; opacity: .5; }.parent-welcome::after { background: linear-gradient(90deg,#f3eff6f5,#f3eff6c9 55%,#f3eff655); } }
 @media(prefers-reduced-motion:reduce) { .welcome-copy,.welcome-landscape,.welcome-landscape :deep(circle),.welcome-landscape :deep(ellipse) { animation: none; }.welcome-link svg { transition: none; }.welcome-link:hover svg { transform: none; } }
 @media print { .parent-welcome { display: none; } }
 @keyframes brain-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

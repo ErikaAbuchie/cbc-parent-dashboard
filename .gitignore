@@ -11,6 +11,11 @@ frontend/.nuxt/
 frontend/.env
 
 # General
+/node_modules/
+/output/
+/tmp/
+__pycache__/
+*.py[cod]
 .DS_Store
 Thumbs.db
 *.log
