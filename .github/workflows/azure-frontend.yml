@@ -1,0 +1,64 @@
+name: Deploy Nuxt frontend to Azure
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: Frontend Azure Web App resource name (not its URL)
+        required: true
+        default: parental-insight-frontend
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: azure-frontend-${{ inputs.app_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build the Nuxt server
+        working-directory: frontend
+        env:
+          NITRO_PRESET: node-server
+          NUXT_TELEMETRY_DISABLED: '1'
+        run: npm run build
+
+      - name: Package only the production server output
+        working-directory: frontend/.output
+        run: |
+          test -f server/index.mjs
+          test -d public
+          zip -qr ../../frontend-deploy.zip .
+
+      - name: Check frontend deployment credential
+        env:
+          FRONTEND_PROFILE: ${{ secrets.AZURE_FRONTEND_PUBLISH_PROFILE }}
+        run: |
+          if [ -z "$FRONTEND_PROFILE" ]; then
+            echo '::error::Add the frontend Web App publish profile as AZURE_FRONTEND_PUBLISH_PROFILE in repository Actions secrets.'
+            exit 1
+          fi
+
+      - name: Deploy to the frontend App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ inputs.app_name }}
+          publish-profile: ${{ secrets.AZURE_FRONTEND_PUBLISH_PROFILE }}
+          package: frontend-deploy.zip
